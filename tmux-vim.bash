@@ -49,10 +49,25 @@ _tvim_send_keys() {
     tmux send-keys -t $TVIM "$@"
 }
 
+_fullpath() {
+    if [ -d "$1" ]; then
+        echo $( cd "$1" ; echo "$PWD/" )
+    else
+        echo $( cd $( dirname "$1" ); echo $PWD/$( basename "$1" ) )
+    fi
+}
+
 # _relpath <directory> <filepath>
-# - if filepath is reachable from directory, returns the relative path
-# - otherwise returns the full path
+# - if filepath is reachable from directory, returns the relative path,
+#   otherwise returns the full path
 _relpath() {
+    local d=$( _fullpath "$1" )
+    local f=$( _fullpath "$2" )
+    echo "${f#$d}"
+}
+
+# TODO: deleteme once sure the bash-only version works
+_relpathXXX() {
     perl -MPath::Class=file,dir -E '$f=dir(shift)->absolute;$t=file(shift)->absolute;say $f->subsumes($t)?$t->relative($f):$t' "$@" ;
 }
 
