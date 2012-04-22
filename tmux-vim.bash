@@ -1,10 +1,10 @@
-tvim_running() { tmux lsp -F '#{pane_id}' | grep -q '^'$TVIM'$'; }
+_tvim_is_running() { tmux lsp -F '#{pane_id}' | grep -q '^'$TVIM'$'; }
 
-# tvim [number-of-panes]
+# _tvim_start [number-of-panes]
 # - split a new tmux pane and start vim in it
 # - the pane id is stored in $TVIM
-tvim() {
-    if [[ -n $TVIM ]] && tvim_running; then
+_tvim_start() {
+    if [[ -n $TVIM ]] && _tvim_is_running; then
         # TVIM already exists - try to select that pane
         tmux select-pane -t $TVIM && return
 
@@ -39,33 +39,32 @@ tvim() {
     export TVIM=$(tmux lsp | grep ^${tvim_index}: | grep -o '%[0-9]\+')
 }
 
-# invim [keystrokes...]
+# _tvim_send_keys [keystrokes...]
 # - sends keystrokes to the vim instance created by tvim
 # - if no vim instance exists, one is created
 # - keystroke syntax is the same as tmux send-keys
-invim() {
+_tvim_send_keys() {
     ( [[ -n $TVIM ]] && tmux send-keys -t $TVIM escape ) || tvim
     tmux send-keys -t $TVIM escape
     tmux send-keys -t $TVIM "$@"
 }
 
-# relpath <directory> <filepath>
+# _relpath <directory> <filepath>
 # - if filepath is reachable from directory, returns the relative path
 # - otherwise returns the full path
-relpath() {
+_relpath() {
     perl -MPath::Class=file,dir -E '$f=dir(shift)->absolute;$t=file(shift)->absolute;say $f->subsumes($t)?$t->relative($f):$t' "$@" ;
 }
 
-# vi [files...]
+# tvim [files...]
 # - if no existing tvim instance is running, a new one is spawned
 # - opens the listed files inside the tvim instance
-unset -f vi
-vi() {
-    tvim
+tvim() {
+    _tvim_start
     for file in "$@"; do
-        local newfile=$( relpath "$TDIR" "$file" )
+        local newfile=$( _relpath "$TDIR" "$file" )
         #echo $TDIR '+' $file '=>' $newfile
-        invim :e space "${newfile// /\\ }" enter
+        _tvim_send_keys :e space "${newfile// /\\ }" enter
     done
     tmux select-pane -t $TVIM
 }
