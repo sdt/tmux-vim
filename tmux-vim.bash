@@ -49,9 +49,12 @@ _tvim_send_keys() {
     tmux send-keys -t $TVIM "$@"
 }
 
+# _fullpath <file or dir>
+# - expands a file or directory into its full path spec
+# - TODO: not tested with symlinks
 _fullpath() {
     if [ -d "$1" ]; then
-        echo $( cd "$1" ; echo "$PWD/" )
+        echo $( cd "$1" ; echo "$PWD" )
     else
         echo $( cd $( dirname "$1" ); echo $PWD/$( basename "$1" ) )
     fi
@@ -63,7 +66,7 @@ _fullpath() {
 _relpath() {
     local d=$( _fullpath "$1" )
     local f=$( _fullpath "$2" )
-    echo "${f#$d}"
+    echo "${f#$d/}"
 }
 
 # TODO: deleteme once sure the bash-only version works
