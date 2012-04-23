@@ -9,9 +9,9 @@
 _tvim_panes() {
     local shell_min_width=${TVIM_SHELL_MIN_WIDTH:-132}
     local vim_pane_width=${TVIM_PANE_WIDTH:-80}
-    local screen_width=$(tmux lsc -t $TMUX_PANE |\
-                         egrep -o '[0-9]+x[0-9]+' |\
-                         cut -d x -f 2 )
+    local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
+
+    #TODO: change client_height to client_width when tmux 1.7 arrives
 
     echo $[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
 }
@@ -38,14 +38,11 @@ _tvim_start() {
     local tvim_pane=$(tmux split-window -P -h -l $split_width \
                         "exec vim -O$vim_panes")
 
-    # Extract just the pane index from session:window.pane
-    local tvim_index=$(echo $tvim_pane | cut -d . -f 2)
-
     # Now convert the pane index into a global persistent id
-    # 1: [100x88] [history 0/10000, 0 bytes] %2
-    # ^^ index                           id  ^^
+    # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
+    # ^^^^^ $tvim_pane                    $TVIM  ^^
+    export TVIM=$(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
     export TDIR="$PWD"
-    export TVIM=$(tmux lsp | grep ^${tvim_index}: | grep -o '%[0-9]\+')
 }
 
 # _tvim_send_keys [keystrokes...]
