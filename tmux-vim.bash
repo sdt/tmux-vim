@@ -1,3 +1,21 @@
+# Configuration variables.
+#
+# TVIM_PANE_WIDTH - how wide a single vim pane is (default 80)
+# TVIM_PANES - how many vim panes to create
+#
+# If TVIM_PANES is not set, then it will be set as large as possible while
+# keeping the shell pane width at least TVIM_SHELL_MIN_WIDTH (default 132)
+
+_tvim_panes() {
+    local shell_min_width=${TVIM_SHELL_MIN_WIDTH:-132}
+    local vim_pane_width=${TVIM_PANE_WIDTH:-80}
+    local screen_width=$(tmux lsc -t $TMUX_PANE |\
+                         egrep -o '[0-9]+x[0-9]+' |\
+                         cut -d x -f 2 )
+
+    echo $[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
+}
+
 _tvim_is_running() { tmux lsp -F '#{pane_id}' | grep -q '^'$TVIM'$'; }
 
 # _tvim_start [number-of-panes]
@@ -12,22 +30,13 @@ _tvim_start() {
         # (shouldn't happen)
     fi
 
-    local width=$1
-    if [[ -z $width ]]; then
-        # /dev/pts/0: 0 [364x89 xterm-color] (utf8)
-        #                ^^^ width
-        local scwidth=$(tmux lsc -t $TMUX_PANE |\
-            egrep -o '[0-9]+x[0-9]+' | cut -d x -f 2 )
-        if [[ $scwidth -ge 242 ]]; then
-            width=2
-        else
-            width=1
-        fi
-    fi
+    local vim_panes=${1:-${TVIM_PANES:-$(_tvim_panes)}}
+    local vim_pane_width=${TVIM_PANE_WIDTH:-80}
+    local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
 
     # Split a new pane, start vim in it, and record the pane index
-    local tvim_pane=$(tmux split-window -P -h -l $[ 81 * $width - 1 ] \
-                        "exec vim -O$width")
+    local tvim_pane=$(tmux split-window -P -h -l $split_width \
+                        "exec vim -O$vim_panes")
 
     # Extract just the pane index from session:window.pane
     local tvim_index=$(echo $tvim_pane | cut -d . -f 2)
