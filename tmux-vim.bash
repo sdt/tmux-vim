@@ -57,7 +57,6 @@ _tvim_send_keys() {
 
 # _fullpath <file or dir>
 # - expands a file or directory into its full path spec
-# - TODO: not tested with symlinks
 _fullpath() {
     if [ -d "$1" ]; then
         echo $( cd "$1" ; echo "$PWD" )
@@ -73,11 +72,6 @@ _relpath() {
     local d=$( _fullpath "$1" )
     local f=$( _fullpath "$2" )
     echo "${f#$d/}"
-}
-
-# TODO: deleteme once sure the bash-only version works
-_relpathXXX() {
-    perl -MPath::Class=file,dir -E '$f=dir(shift)->absolute;$t=file(shift)->absolute;say $f->subsumes($t)?$t->relative($f):$t' "$@" ;
 }
 
 # tvim [files...]
