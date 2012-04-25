@@ -13,7 +13,8 @@ _tvim_panes() {
 
     #TODO: change client_height to client_width when tmux 1.7 arrives
 
-    echo $[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
+    local panes=$[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
+    echo $[ $panes > 0 ? $panes : 1 ]
 }
 
 _tvim_is_running() { tmux lsp -F '#{pane_id}' | grep -q '^'$TVIM'$'; }
