@@ -53,23 +53,18 @@ _tvim_send_keys() {
     tmux send-keys -t $TVIM escape "$@"
 }
 
-# _fullpath <file or dir>
-# - expands a file or directory into its full path spec
-_fullpath() {
-    if [ -d "$1" ]; then
-        echo $( cd "$1" ; echo "$PWD" )
-    else
-        echo $( cd $( dirname "$1" ); echo $PWD/$( basename "$1" ) )
-    fi
+# _tvim_cd <directory>
+# - make tvim cd into $directory
+_tvim_cd() {
+    # Backslash escape all spaces in the directory name
+    _tvim_send_keys :cd space "${1// /\\ }" enter
 }
 
-# _relpath <directory> <filepath>
-# - if filepath is reachable from directory, returns the relative path,
-#   otherwise returns the full path
-_relpath() {
-    local d=$( _fullpath "$1" )
-    local f=$( _fullpath "$2" )
-    echo "${f#$d/}"
+# _tvim_cd <directory>
+# - make tvim cd into $directory
+_tvim_edit() {
+    # Backslash escape all spaces in the file name
+    _tvim_send_keys :e space "${1// /\\ }" enter
 }
 
 # tvim [files...]
@@ -77,10 +72,22 @@ _relpath() {
 # - opens the listed files inside the tvim instance
 tvim() {
     _tvim_start
+
+    # If we are now in a different directory than $TDIR, we want to make
+    # vim switch to this directory temporarily before opening the files.
+    # This obviates any relative path computations.
+    # (don't go switching directories if we have no files though...)
+    #TODO: is there bash syntax for: do_cd=$expr ?
+    local do_cd=0
+    if [[ ( $# -gt 0 ) && ( "$PWD" != "$TDIR" ) ]]; then
+        do_cd=1
+    fi
+
+    [[ $do_cd ]] && _tvim_cd "$PWD"
     for file in "$@"; do
-        local newfile=$( _relpath "$TDIR" "$file" )
-        #echo $TDIR '+' $file '=>' $newfile
-        _tvim_send_keys :e space "${newfile// /\\ }" enter
+        _tvim_edit "$file"
     done
+    [[ $do_cd ]] && _tvim_cd -
+
     tmux select-pane -t $TVIM
 }
