@@ -48,12 +48,9 @@ _tvim_start() {
 
 # _tvim_send_keys [keystrokes...]
 # - sends keystrokes to the vim instance created by tvim
-# - if no vim instance exists, one is created
 # - keystroke syntax is the same as tmux send-keys
 _tvim_send_keys() {
-    ( [[ -n $TVIM ]] && tmux send-keys -t $TVIM escape ) || tvim
-    tmux send-keys -t $TVIM escape
-    tmux send-keys -t $TVIM "$@"
+    tmux send-keys -t $TVIM escape "$@"
 }
 
 # _fullpath <file or dir>
