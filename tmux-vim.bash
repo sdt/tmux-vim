@@ -35,9 +35,12 @@ _tvim_start() {
     local vim_pane_width=${TVIM_PANE_WIDTH:-80}
     local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
 
+    local vim_args=''
+    #vim_args+=" -O$vim_panes"  # this is annoying me - turning it off
+
     # Split a new pane, start vim in it, and record the pane index
     local tvim_pane=$(tmux split-window -P -h -l $split_width \
-                        "exec vim -O$vim_panes")
+                        "exec vim $vim_args")
 
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
