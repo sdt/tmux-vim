@@ -53,21 +53,14 @@ _tvim_start() {
 # - sends keystrokes to the vim instance created by tvim
 # - keystroke syntax is the same as tmux send-keys
 _tvim_send_keys() {
-    tmux send-keys -t $TVIM escape "$@"
+    tmux send-keys -t $TVIM "$@"
 }
-
-# _tvim_cd <directory>
-# - make tvim cd into $directory
-_tvim_cd() {
-    # Backslash escape all spaces in the directory name
-    _tvim_send_keys :cd space "${1// /\\ }" enter
-}
-
-# _tvim_cd <directory>
-# - make tvim cd into $directory
-_tvim_edit() {
+# _tvim_op <op> <file>
+# - does _tvim_send_keys :$op space $file
+# - escapes spaces correctly in $file
+_tvim_op() {
     # Backslash escape all spaces in the file name
-    _tvim_send_keys :e space "${1// /\\ }" enter
+    _tvim_send_keys :$1 space "${2// /\\ }" enter
 }
 
 # tvim [files...]
@@ -75,22 +68,33 @@ _tvim_edit() {
 # - opens the listed files inside the tvim instance
 tvim() {
     _tvim_start
+    _tvim_send_keys escape  # make sure we're in command mode
 
-    # If we are now in a different directory than $TDIR, we want to make
-    # vim switch to this directory temporarily before opening the files.
-    # This obviates any relative path computations.
-    # (don't go switching directories if we have no files though...)
-    #TODO: is there bash syntax for: do_cd=$expr ?
-    local do_cd=0
-    if [[ ( $# -gt 0 ) && ( "$PWD" != "$TDIR" ) ]]; then
-        do_cd=1
+    if [[ $# -gt 0 ]]; then
+
+        # If we are now in a different directory than $TDIR, we want to make
+        # vim switch to this directory temporarily before opening the files.
+        # This obviates any relative path computations.
+        # (don't go switching directories if we have no files though...)
+        [[ "$PWD" != "$TDIR" ]] && _tvim_op cd "$PWD"
+
+        # Rather than :edit each file in turn, :badd each file into a new
+        # buffer, and then finally switch to the last one with :buffer.
+        # This is to handle the situation where the current buffer is unsaved,
+        # and an :edit command will cause vim to prompt the user to save,
+        # abandon or cancel.
+        # If we just :edit each file, things just don't work out naturally;
+        # cancel works, but yes/no end up with only the first file opened.
+        # Errant escape keys cause the whole open to just silently fail.
+        # This approach pushes the user interaction right to the end.
+        for file in "$@"; do
+            _tvim_op badd "$file"   # load a buffer for each file
+        done
+
+        [[ "$PWD" != "$TDIR" ]] && _tvim_op cd -
+
+        _tvim_op buffer "${!#}"       # switch to the final file
     fi
-
-    [[ $do_cd ]] && _tvim_cd "$PWD"
-    for file in "$@"; do
-        _tvim_edit "$file"
-    done
-    [[ $do_cd ]] && _tvim_cd -
 
     tmux select-pane -t $TVIM
 }
