@@ -37,7 +37,7 @@ This behaviour can be adjusted with the following environment variables.
 
 First `tmux split-window` is used to create the **vim** pane, with the pane id saved in **$TVIM**. This happens on demand - panes are created only when needed.
 
-Then keystrokes are injected into **vim** with `tmux send-keys`. Loading a file means sending keystrokes to force **vim** to do `:edie filename<cr>`.
+Then keystrokes are injected into **vim** with `tmux send-keys`. Loading a file means sending keystrokes to force **vim** to do `:edit filename<cr>`. Once **vim** is running, this keystroke-injection is how **vim** gets controlled.
 
 Finally, `tmux select-pane` transfers control over to the vim pane.
 
