@@ -2,6 +2,12 @@
 
 `tvim` is a bash function which I use in conjunction with tmux to create a persistent vim pane within a tmux window.
 
+## Installation
+
+From your .bashrc:
+
+`source tmux-vim/tmux-vim.bash`
+
 ## Usage
 
 `tvim [file] [files...]`
