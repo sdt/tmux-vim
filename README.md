@@ -30,3 +30,25 @@ This behaviour can be adjusted with the following environment variables.
 ### TVIM_SHELL_MIN_WIDTH
 * if `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns
 * on narrow displays, one **vim** pane will always be created, even if this means we leave less that `TVIM_SHELL_MIN_WIDTH` columns for the shell
+
+## How's it work?
+
+**tmux** makes it all possible.
+
+First `tmux split-window` is used to create the **vim** pane, with the pane id saved in **$TVIM**. This happens on demand - panes are created only when needed.
+
+Then keystrokes are injected into **vim** with `tmux send-keys`. Loading a file means sending keystrokes to force **vim** to do `:edie filename<cr>`.
+
+Finally, `tmux select-pane` transfers control over to the vim pane.
+
+## Bugs?
+
+Probably.
+
+I'd really like to do a **zsh** port.
+
+By default, **vim** won't abandon an unsaved file to open another one, instead it'll prompt the user to save, abandon or cancel. This can throw out the keystroke stuffing when trying to open multiple files.
+
+Rather than using the `:edit` command, the files are loaded with multiple calls to `:badd`, finally switching to the last one with `:buffer`. If the current buffer is unsaved, the prompt happens now, after all the keystroke stuffing. This seems to work, but there may be combinations that still break.
+
+When the vim pane is created, the current directory is saved in **$TDIR**. When opening files, the current directory is compared to **$TDIR**. If these differ, `:cd` is used in vim to temporarily change back to **$TDIR** before opening the files. This avoids any sticky relative path computations, but may contain bugs.
