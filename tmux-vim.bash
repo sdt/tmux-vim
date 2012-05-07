@@ -6,6 +6,32 @@
 # If TVIM_PANES is not set, then it will be set as large as possible while
 # keeping the shell pane width at least TVIM_SHELL_MIN_WIDTH (default 132)
 
+# _tvim_store key value
+# - stores key/value pair in tmux environment
+# - appends window id to key so this is a per-window setting
+# - much thanks to Romain Francoise for help with this!
+_tvim_store() {
+    local curwin=$( tmux list-panes -F '#{window_index}' | head -n 1 )
+    tmux set-environment "${1}_${curwin}" "$2"
+}
+
+# _tvim_fetch key
+# - retrieves value from tmux environment
+# - appends window id to key so this is a per-window setting
+# - much thanks to Romain Francoise for help with this!
+_tvim_fetch() {
+    local curwin=$( tmux list-panes -F '#{window_index}' | head -n 1 )
+    tmux show-environment | grep "^${1}_${curwin}=" | cut -d= -f2-
+}
+
+_tvim_pane_id() {
+    _tvim_fetch tvim_pane
+}
+
+_tvim_dir() {
+    _tvim_fetch tvim_dir
+}
+
 _tvim_panes() {
     local shell_min_width=${TVIM_SHELL_MIN_WIDTH:-132}
     local vim_pane_width=${TVIM_PANE_WIDTH:-80}
@@ -17,15 +43,18 @@ _tvim_panes() {
     echo $[ $panes > 0 ? $panes : 1 ]
 }
 
-_tvim_is_running() { tmux lsp -F '#{pane_id}' | grep -q '^'$TVIM'$'; }
+_tvim_is_running() {
+    local pane_id=$( _tvim_pane_id )
+    [[ -n $pane_id ]] && tmux lsp -F '#{pane_id}' | grep -q '^'$pane_id'$'
+}
 
 # _tvim_start [number-of-panes]
 # - split a new tmux pane and start vim in it
-# - the pane id is stored in $TVIM
+# - the pane id is stored as tvim_pane, using _tvim_store
 _tvim_start() {
-    if [[ -n $TVIM ]] && _tvim_is_running; then
+    if _tvim_is_running; then
         # TVIM already exists - try to select that pane
-        tmux select-pane -t $TVIM && return
+        tmux select-pane -t $( _tvim_pane_id ) && return
 
         # If we get here, that pane no longer exists, so fall thru
         # (shouldn't happen)
@@ -45,15 +74,16 @@ _tvim_start() {
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
     # ^^^^^ $tvim_pane                    $TVIM  ^^
-    export TVIM=$(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
-    export TDIR="$PWD"
+    _tvim_store tvim_pane \
+        $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
+    _tvim_store tvim_dir "$PWD"
 }
 
 # _tvim_send_keys [keystrokes...]
 # - sends keystrokes to the vim instance created by tvim
 # - keystroke syntax is the same as tmux send-keys
 _tvim_send_keys() {
-    tmux send-keys -t $TVIM "$@"
+    tmux send-keys -t $( _tvim_pane_id ) "$@"
 }
 # _tvim_op <op> <file>
 # - does _tvim_send_keys :$op space $file
@@ -76,7 +106,7 @@ tvim() {
         # vim switch to this directory temporarily before opening the files.
         # This obviates any relative path computations.
         # (don't go switching directories if we have no files though...)
-        [[ "$PWD" != "$TDIR" ]] && _tvim_op cd "$PWD"
+        [[ "$PWD" != "$( _tvim_dir )" ]] && _tvim_op cd "$PWD"
 
         # Rather than :edit each file in turn, :badd each file into a new
         # buffer, and then finally switch to the last one with :buffer.
@@ -91,10 +121,10 @@ tvim() {
             _tvim_op badd "$file"   # load a buffer for each file
         done
 
-        [[ "$PWD" != "$TDIR" ]] && _tvim_op cd -
+        [[ "$PWD" != "$( _tvim_dir )" ]] && _tvim_op cd -
 
         _tvim_op buffer "${!#}"       # switch to the final file
     fi
 
-    tmux select-pane -t $TVIM
+    tmux select-pane -t $( _tvim_pane_id )
 }
