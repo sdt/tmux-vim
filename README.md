@@ -1,6 +1,6 @@
 # tmux-vim
 
-`tvim` is a bash function which I use in conjunction with tmux to create a persistent vim pane within a tmux window.
+`tvim` is a bash function which I use in conjunction with **tmux** to create a persistent **vim** pane within a **tmux** window.
 
 ## Installation
 
@@ -22,8 +22,7 @@ If you close that **vim** session, the pane will be destroyed. The next call to 
 
 ## Configuration
 
-By default **tvim** will create as many 80-column vim panes as possible, while
-leaving at least 132-columns for the shell session on the left.
+By default **tvim** will create as many 80-column **vim** panes as possible, while leaving at least 132-columns for the shell session on the left.
 
 This behaviour can be adjusted with the following environment variables.
 
@@ -31,7 +30,7 @@ This behaviour can be adjusted with the following environment variables.
 * width of a single **vim** pane in columns (default 80)
 
 ### TVIM_PANES
-* optionally specify a fixed number of vim panes with this
+* optionally specify a fixed number of **vim** panes with this
 
 ### TVIM_SHELL_MIN_WIDTH
 * if `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns
@@ -45,7 +44,7 @@ First `tmux split-window` is used to create the **vim** pane, with the pane id s
 
 Then keystrokes are injected into **vim** with `tmux send-keys`. Loading a file means sending keystrokes to force **vim** to do `:edit filename<cr>`. Once **vim** is running, this keystroke-injection is how **vim** gets controlled.
 
-Finally, `tmux select-pane` transfers control over to the vim pane.
+Finally, `tmux select-pane` transfers control over to the **vim** pane.
 
 ## Bugs?
 
@@ -57,4 +56,4 @@ By default, **vim** won't abandon an unsaved file to open another one, instead i
 
 Rather than using the `:edit` command, the files are loaded with multiple calls to `:badd`, finally switching to the last one with `:buffer`. If the current buffer is unsaved, the prompt happens now, after all the keystroke stuffing. This seems to work, but there may be combinations that still break.
 
-When the vim pane is created, the current directory is saved in **$TDIR**. When opening files, the current directory is compared to **$TDIR**. If these differ, `:cd` is used in vim to temporarily change back to **$TDIR** before opening the files. This avoids any sticky relative path computations, but may contain bugs.
+When the **vim** pane is created, the current directory is saved. When opening files, the current directory is compared to the stored one. If these differ, `:cd` is used in **vim** to temporarily change back to the original directory before opening the files. This avoids any sticky relative path computations, but breaks if the user does a `:cd` manuall within **vim**.
