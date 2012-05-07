@@ -1,6 +1,0 @@
-* Only the original pane has access to the TVIM and TDIR variables, it would be
-  nice to have them shared within all panes in a window, so that tvim just works
-  across all panes
-  - some kind of code hook for new panes which sets TVIM and TDIR?
-  - tmux managed key/value pair store per windows?
-  - bash function which splits the window and then sends keystrokes across?
