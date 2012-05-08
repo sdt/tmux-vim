@@ -1,5 +1,6 @@
 # Configuration variables.
 #
+# TVIM_VIM_ARGS - command-line args to pass to vim (default none)
 # TVIM_PANE_WIDTH - how wide a single vim pane is (default 80)
 # TVIM_PANES - how many vim panes to create
 #
@@ -66,7 +67,7 @@ _tvim_start() {
     local vim_pane_width=${TVIM_PANE_WIDTH:-80}
     local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
 
-    local vim_args=''
+    local vim_args=$TVIM_VIM_ARGS
     #vim_args+=" -O$vim_panes"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index

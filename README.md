@@ -38,6 +38,9 @@ This behaviour can be adjusted with the following environment variables.
 * if `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns
 * on narrow displays, one **vim** pane will always be created, even if this means we leave less that `TVIM_SHELL_MIN_WIDTH` columns for the shell
 
+### TVIM_VIM_ARGS
+* command-line arguments to pass through to **vim**
+
 ## How's it work?
 
 **tmux** makes it all possible.
