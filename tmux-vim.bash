@@ -6,13 +6,16 @@
 # If TVIM_PANES is not set, then it will be set as large as possible while
 # keeping the shell pane width at least TVIM_SHELL_MIN_WIDTH (default 132)
 
+_tvim_window_id() {
+    tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2
+}
+
 # _tvim_store key value
 # - stores key/value pair in tmux environment
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
 _tvim_store() {
-    local curwin=$( tmux list-panes -F '#{window_index}' | head -n 1 )
-    tmux set-environment "${1}_${curwin}" "$2"
+    tmux set-environment "${1}_$( _tvim_window_id )" "$2"
 }
 
 # _tvim_fetch key
@@ -20,8 +23,7 @@ _tvim_store() {
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
 _tvim_fetch() {
-    local curwin=$( tmux list-panes -F '#{window_index}' | head -n 1 )
-    tmux show-environment | grep "^${1}_${curwin}=" | cut -d= -f2-
+    tmux show-environment | grep "^${1}_$( _tvim_window_id )=" | cut -d= -f2-
 }
 
 _tvim_pane_id() {
@@ -45,7 +47,7 @@ _tvim_panes() {
 
 _tvim_is_running() {
     local pane_id=$( _tvim_pane_id )
-    [[ -n $pane_id ]] && tmux lsp -F '#{pane_id}' | grep -q '^'$pane_id'$'
+    [[ -n $pane_id ]] && tmux lsp -F '#{pane_id}' | grep -q ^$pane_id$
 }
 
 # _tvim_start [number-of-panes]
@@ -105,7 +107,6 @@ tvim() {
         # If we are now in a different directory than $TDIR, we want to make
         # vim switch to this directory temporarily before opening the files.
         # This obviates any relative path computations.
-        # (don't go switching directories if we have no files though...)
         [[ "$PWD" != "$( _tvim_dir )" ]] && _tvim_op cd "$PWD"
 
         # Rather than :edit each file in turn, :badd each file into a new
