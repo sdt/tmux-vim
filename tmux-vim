@@ -1,11 +1,49 @@
-# Configuration variables.
+#!/bin/bash
+
+#------------------------------------------------------------------------------
+# tmux-vim
 #
-# TVIM_VIM_ARGS - command-line args to pass to vim (default none)
-# TVIM_PANE_WIDTH - how wide a single vim pane is (default 80)
-# TVIM_PANES - how many vim panes to create
+# Persistent vim panes within tmux.
 #
-# If TVIM_PANES is not set, then it will be set as large as possible while
-# keeping the shell pane width at least TVIM_SHELL_MIN_WIDTH (default 132)
+# Usage:
+#
+#   tmux-vim [file [files...]]
+#
+# Configuration:
+#
+#   TMUX_VIM_ARGS - command-line args to pass to vim (default none)
+#   TMUX_VIM_PANE_WIDTH - how wide a single vim pane is (default 80)
+#   TMUX_VIM_PANES - how many vim panes to create
+#
+# If TMUX_VIM_PANES is not set, then it will be set as large as possible while
+# keeping the shell pane width at least TMUX_VIM_SHELL_MIN_WIDTH (default 132)
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Copyright (c) 2012, Stephen Thirlwall
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# * Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the following disclaimer.
+# * Redistributions in binary form must reproduce the above copyright
+#   notice, this list of conditions and the following disclaimer in the
+#   documentation and/or other materials provided with the distribution.
+# * The name of Stephen Thirlwall may not be used to endorse or promote products
+#   derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL STEPHEN THIRLWALL BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#------------------------------------------------------------------------------
 
 _tvim_window_id() {
     tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2
@@ -28,16 +66,16 @@ _tvim_fetch() {
 }
 
 _tvim_pane_id() {
-    _tvim_fetch tvim_pane
+    _tvim_fetch tmux_vim_pane
 }
 
 _tvim_dir() {
-    _tvim_fetch tvim_dir
+    _tvim_fetch tmux_vim_dir
 }
 
 _tvim_panes() {
-    local shell_min_width=${TVIM_SHELL_MIN_WIDTH:-132}
-    local vim_pane_width=${TVIM_PANE_WIDTH:-80}
+    local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
+    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
     local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
 
     #TODO: change client_height to client_width when tmux 1.7 arrives
@@ -63,11 +101,11 @@ _tvim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_panes=${1:-${TVIM_PANES:-$(_tvim_panes)}}
-    local vim_pane_width=${TVIM_PANE_WIDTH:-80}
+    local vim_panes=${1:-${TMUX_VIM_PANES:-$(_tvim_panes)}}
+    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
     local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
 
-    local vim_args=$TVIM_VIM_ARGS
+    local vim_args=$TMUX_VIM_ARGS
     #vim_args+=" -O$vim_panes"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index
@@ -76,7 +114,7 @@ _tvim_start() {
 
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
-    # ^^^^^ $tvim_pane                    $TVIM  ^^
+    # ^^^^^ $tvim_pane                  pane_id  ^^
     _tvim_store tvim_pane \
         $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
     _tvim_store tvim_dir "$PWD"
@@ -130,3 +168,6 @@ tvim() {
 
     tmux select-pane -t $( _tvim_pane_id )
 }
+
+tvim "$@"
+
