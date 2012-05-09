@@ -65,12 +65,20 @@ _tvim_fetch() {
     tmux show-environment | grep "^${1}_$( _tvim_window_id )=" | cut -d= -f2-
 }
 
+_tvim_fetch_or_store() {
+    if [[ $# -gt 1 ]]; then
+        _tvim_store "$@"
+    else
+        _tvim_fetch "$@"
+    fi
+}
+
 _tvim_pane_id() {
-    _tvim_fetch tmux_vim_pane
+    _tvim_fetch_or_store tmux_vim_pane "$@"
 }
 
 _tvim_dir() {
-    _tvim_fetch tmux_vim_dir
+    _tvim_fetch_or_store tmux_vim_dir "$@"
 }
 
 _tvim_panes() {
@@ -115,9 +123,8 @@ _tvim_start() {
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
     # ^^^^^ $tvim_pane                  pane_id  ^^
-    _tvim_store tvim_pane \
-        $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
-    _tvim_store tvim_dir "$PWD"
+    _tvim_pane_id $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
+    _tvim_dir "$PWD"
 }
 
 # _tvim_send_keys [keystrokes...]
