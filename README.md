@@ -4,6 +4,10 @@
 
 ![screenshot](http://sdt.github.com/tmux-vim/img/tvim-screenshot.png)
 
+## Requirements
+
+You need **tmux** version 1.6 or later.
+
 ## Installation
 
 Copy **tmux-vim** to somewhere in your path.
