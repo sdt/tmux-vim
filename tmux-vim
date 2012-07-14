@@ -81,6 +81,13 @@ _tvim_dir() {
     _tvim_fetch_or_store tmux_vim_dir "$@"
 }
 
+# _tvim_send_keys [keystrokes...]
+# - sends keystrokes to the vim instance created by tvim
+# - keystroke syntax is the same as tmux send-keys
+_tvim_send_keys() {
+    tmux send-keys -t $( _tvim_pane_id ) "$@"
+}
+
 _tvim_panes() {
     local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
     local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
@@ -164,13 +171,6 @@ _tvim_start() {
     # ^^^^^ $tvim_pane                  pane_id  ^^
     _tvim_pane_id $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
     _tvim_dir "$PWD"
-}
-
-# _tvim_send_keys [keystrokes...]
-# - sends keystrokes to the vim instance created by tvim
-# - keystroke syntax is the same as tmux send-keys
-_tvim_send_keys() {
-    tmux send-keys -t $( _tvim_pane_id ) "$@"
 }
 
 # tvim [files...]
