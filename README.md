@@ -1,6 +1,6 @@
-# tmux-vim
+# tvim
 
-`tmux-vim` is a bash script which works in conjunction with **tmux** to create a persistent **vim** pane within a **tmux** window.
+`tvim` is a bash script which works in conjunction with **tmux** to create a persistent **vim** pane within a **tmux** window.
 
 ![screenshot](http://sdt.github.com/tmux-vim/img/tvim-screenshot.png)
 
@@ -10,23 +10,23 @@ You need **tmux** version 1.6 or later.
 
 ## Installation
 
-Copy **tmux-vim** to somewhere in your path.
+Copy **tvim** to somewhere in your path.
 
 ## Usage
 
-Use **tmux-vim** just like you'd use **vim**.
+Use **tvim** just like you'd use **vim**.
 
-`tmux-vim [file] [files...]`
+`tvim [file] [files...]`
 
 The first time you run it, a new pane will be created on the right hand side of your **tmux** window, running an instance of **vim**.
 
-Further calls to **tmux-vim** will open the files in new buffers in the same **vim** session.
+Further calls to **tvim** will open the files in new buffers in the same **vim** session.
 
-If you close that **vim** session, the pane will be destroyed. The next call to **tmux-vim** will create a new one.
+If you close that **vim** session, the pane will be destroyed. The next call to **tvim** will create a new one.
 
 ## Configuration
 
-By default **tmux-vim** will create as many 80-column **vim** panes as possible, while leaving at least 132-columns for the shell session on the left.
+By default **tvim** will create as many 80-column **vim** panes as possible, while leaving at least 132-columns for the shell session on the left.
 
 This behaviour can be adjusted with the following environment variables.
 
@@ -54,7 +54,7 @@ On narrow displays, one **vim** pane will always be created, even if this means 
 
 First `tmux split-window` is used to create the **vim** pane, and the pane id is saved in the tmux environment. This happens on demand - panes are created only when needed.
 
-The **vim** instance is controlled by injecting keystrokes with `tmux send-keys`. To load a file, **tmux-vim** sends `:edit filename<cr>` to the **vim** instance.
+The **vim** instance is controlled by injecting keystrokes with `tmux send-keys`. To load a file, **tvim** sends `:edit filename<cr>` to the **vim** instance.
 
 Finally, `tmux select-pane` transfers control over to the **vim** pane.
 
