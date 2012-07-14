@@ -1,22 +1,14 @@
 #!/bin/bash
 
 #------------------------------------------------------------------------------
-# tmux-vim
+# tvim
 #
 # Persistent vim panes within tmux.
 #
 # Usage:
 #
-#   tmux-vim [file [files...]]
+#   tvim [file [files...]]
 #
-# Configuration:
-#
-#   TMUX_VIM_ARGS - command-line args to pass to vim (default none)
-#   TMUX_VIM_PANE_WIDTH - how wide a single vim pane is (default 80)
-#   TMUX_VIM_PANES - how many vim panes to create
-#
-# If TMUX_VIM_PANES is not set, then it will be set as large as possible while
-# keeping the shell pane width at least TMUX_VIM_SHELL_MIN_WIDTH (default 132)
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
@@ -77,19 +69,15 @@ _tvim_pane_id() {
     _tvim_fetch_or_store tmux_vim_pane "$@"
 }
 
-_tvim_dir() {
+_tvim_last_dir() {
     _tvim_fetch_or_store tmux_vim_dir "$@"
 }
 
-_tvim_panes() {
-    local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
-    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
-    local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
-
-    #TODO: change client_height to client_width when tmux 1.7 arrives
-
-    local panes=$[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
-    echo $[ $panes > 0 ? $panes : 1 ]
+# _tvim_send_keys [keystrokes...]
+# - sends keystrokes to the vim instance created by tvim
+# - keystroke syntax is the same as tmux send-keys
+_tvim_send_keys() {
+    tmux send-keys -t $( _tvim_pane_id ) "$@"
 }
 
 _tvim_is_running() {
@@ -128,6 +116,14 @@ _tvim_pre_flight_checks() {
     return 0
 }
 
+# _tvim_op <op> <file>
+# - does _tvim_send_keys :$op space $file
+# - escapes spaces correctly in $file
+_tvim_op() {
+    # Backslash escape all spaces in the file name
+    _tvim_send_keys :$1 space "${2// /\\ }" enter
+}
+
 # _tvim_start [number-of-panes]
 # - split a new tmux pane and start vim in it
 # - the pane id is stored as tvim_pane, using _tvim_store
@@ -140,42 +136,49 @@ _tvim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_panes=${1:-${TMUX_VIM_PANES:-$(_tvim_panes)}}
-    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
-    local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
+    local tvim_pane_split=${TVIM_SPLIT:-'HORIZONTAL'}
 
-    local vim_args=$TMUX_VIM_ARGS
-    #vim_args+=" -O$vim_panes"  # this is annoying me - turning it off
+    if [ ${tvim_pane_split} == 'HORIZONTAL' ];then
+        local split_method='h'
+        #TODO: change client_height to client_width when tmux 1.7 arrives
+        local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
+        local shell_width=${TVIM_SHELL_WIDTH:-132}
+        local width_left=$[ $screen_width - $shell_width ]
+        if [ $width_left -lt 80 ];then
+            local split_width=80
+        else
+            local split_width=$width_left
+        fi
+        local split_size=${split_width}
+    else
+        local split_method='v'
+        local split_height=${TVIM_SHELL_HEIGHT:-15}
+        local split_size=${split_height}
+    fi
+
+    local vim_args=$TVIM_VIM_ARGS
 
     # Split a new pane, start vim in it, and record the pane index
-    local tvim_pane=$(tmux split-window -P -h -l $split_width \
+    local tvim_pane=$(tmux split-window -P -$split_method -l $split_size \
                         "exec vim $vim_args")
 
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
     # ^^^^^ $tvim_pane                  pane_id  ^^
     _tvim_pane_id $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
-    _tvim_dir "$PWD"
-}
+    _tvim_last_dir "$PWD"
 
-# _tvim_send_keys [keystrokes...]
-# - sends keystrokes to the vim instance created by tvim
-# - keystroke syntax is the same as tmux send-keys
-_tvim_send_keys() {
-    tmux send-keys -t $( _tvim_pane_id ) "$@"
-}
-# _tvim_op <op> <file>
-# - does _tvim_send_keys :$op space $file
-# - escapes spaces correctly in $file
-_tvim_op() {
-    # Backslash escape all spaces in the file name
-    _tvim_send_keys :$1 space "${2// /\\ }" enter
+    if [ ${tvim_pane_split} != 'HORIZONTAL' ]; then
+        tmux swap-pane -UD
+    fi
 }
 
 # tvim [files...]
 # - if no existing tvim instance is running, a new one is spawned
 # - opens the listed files inside the tvim instance
 tvim() {
+    [ -f "$HOME/.tvimrc" ] && source "$HOME/.tvimrc"
+
     _tvim_pre_flight_checks || exit 1
     _tvim_start
     _tvim_send_keys escape  # make sure we're in command mode
@@ -185,7 +188,7 @@ tvim() {
         # If we are now in a different directory than $TDIR, we want to make
         # vim switch to this directory temporarily before opening the files.
         # This obviates any relative path computations.
-        [[ "$PWD" != "$( _tvim_dir )" ]] && _tvim_op cd "$PWD"
+        [[ "$PWD" != "$( _tvim_last_dir )" ]] && _tvim_op cd "$PWD"
 
         # Rather than :edit each file in turn, :badd each file into a new
         # buffer, and then finally switch to the last one with :buffer.
@@ -200,7 +203,7 @@ tvim() {
             _tvim_op badd "$file"   # load a buffer for each file
         done
 
-        [[ "$PWD" != "$( _tvim_dir )" ]] && _tvim_op cd -
+        [[ "$PWD" != "$( _tvim_last_dir )" ]] && _tvim_op cd -
 
         _tvim_op buffer "${!#}"       # switch to the final file
     fi
