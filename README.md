@@ -30,6 +30,12 @@ By default **tvim** will create as many 80-column **vim** panes as possible, whi
 
 This behaviour can be adjusted with the following environment variables.
 
+### TVIM_SPLIT
+
+Value: ['HORIZONTAL' | 'VERTICAL' ]
+
+Define how tvim split panes.
+
 ### TVIM_VIM_ARGS
 
 Command-line arguments to pass through to **vim**
@@ -47,6 +53,10 @@ Optionally specify a fixed number of **vim** panes with this
 If `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns.
 
 On narrow displays, one **vim** pane will always be created, even if this means we leave less that `TVIM_SHELL_MIN_WIDTH` columns for the shell.
+
+### TVIM_SHELL_HEIGHT
+
+If `TVIM_SPLIT` is 'VERTICAL', then this variable defines the height of the shell pane.
 
 ## How's it work?
 

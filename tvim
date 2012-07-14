@@ -147,14 +147,24 @@ _tvim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_panes=${1:-${TVIM_VIM_PANES:-$(_tvim_vim_panes)}}
-    local vim_pane_width=${TVIM_VIM_PANE_WIDTH:-80}
-    local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
+    local tvim_pane_split=${TVIM_SPLIT:-'HORIZONTAL'}
+
+    if [ ${tvim_pane_split} == 'HORIZONTAL' ];then
+        local split_method='h'
+        local vim_panes=${1:-${TVIM_VIM_PANES:-$(_tvim_vim_panes)}}
+        local vim_pane_width=${TVIM_VIM_PANE_WIDTH:-80}
+        local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
+        local split_size=${split_width}
+    else
+        local split_method='v'
+        local split_height=${TVIM_SHELL_HEIGHT:-15}
+        local split_size=${split_height}
+    fi
 
     local vim_args=$TVIM_VIM_ARGS
 
     # Split a new pane, start vim in it, and record the pane index
-    local tvim_pane=$(tmux split-window -P -h -l $split_width \
+    local tvim_pane=$(tmux split-window -P -$split_method -l $split_size \
                         "exec vim $vim_args")
 
     # Now convert the pane index into a global persistent id
@@ -162,6 +172,10 @@ _tvim_start() {
     # ^^^^^ $tvim_pane                  pane_id  ^^
     _tvim_pane_id $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
     _tvim_last_dir "$PWD"
+
+    if [ ${tvim_pane_split} != 'HORIZONTAL' ]; then
+        tmux swap-pane -UD
+    fi
 }
 
 # tvim [files...]
