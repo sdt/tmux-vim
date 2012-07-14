@@ -13,10 +13,11 @@
 #
 #   TMUX_VIM_ARGS - command-line args to pass to vim (default none)
 #   TMUX_VIM_PANE_WIDTH - how wide a single vim pane is (default 80)
-#   TMUX_VIM_PANES - how many vim panes to create
+#   TMUX_VIM_PANE_COUNT - how many vim panes to create
 #
-# If TMUX_VIM_PANES is not set, then it will be set as large as possible while
-# keeping the shell pane width at least TMUX_VIM_SHELL_MIN_WIDTH (default 132)
+# If TMUX_VIM_PANE_COUNT is not set, then it will be set as large as possible
+# while keeping the shell pane width at least TMUX_VIM_SHELL_MIN_WIDTH
+# (default 132)
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
@@ -88,7 +89,7 @@ _tvim_send_keys() {
     tmux send-keys -t $( _tvim_pane_id ) "$@"
 }
 
-_tvim_panes() {
+_tvim_vim_pane_count() {
     local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
     local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
     local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
@@ -155,12 +156,12 @@ _tvim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_panes=${1:-${TMUX_VIM_PANES:-$(_tvim_panes)}}
+    local vim_pane_count=${1:-${TMUX_VIM_PANE_COUNT:-$(_tvim_vim_pane_count)}}
     local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
-    local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
+    local split_width=$[ ($vim_pane_width + 1) * $vim_pane_count - 1 ]
 
     local vim_args=$TMUX_VIM_ARGS
-    #vim_args+=" -O$vim_panes"  # this is annoying me - turning it off
+    #vim_args+=" -O$vim_pane_count"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index
     local tvim_pane=$(tmux split-window -P -h -l $split_width \
