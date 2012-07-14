@@ -73,7 +73,7 @@ _tvim_dir() {
     _tvim_fetch_or_store tmux_vim_dir "$@"
 }
 
-_tvim_panes() {
+_tvim_vim_panes() {
     local shell_min_width=${TVIM_SHELL_MIN_WIDTH:-132}
     local vim_pane_width=${TVIM_VIM_PANE_WIDTH:-80}
     local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
@@ -132,7 +132,7 @@ _tvim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_panes=${1:-${TVIM_VIM_PANES:-$(_tvim_panes)}}
+    local vim_panes=${1:-${TVIM_VIM_PANES:-$(_tvim_vim_panes)}}
     local vim_pane_width=${TVIM_VIM_PANE_WIDTH:-80}
     local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
 
