@@ -9,14 +9,6 @@
 #
 #   tmux-vim [file [files...]]
 #
-# Configuration:
-#
-#   TMUX_VIM_ARGS - command-line args to pass to vim (default none)
-#   TMUX_VIM_PANE_WIDTH - how wide a single vim pane is (default 80)
-#   TMUX_VIM_PANES - how many vim panes to create
-#
-# If TMUX_VIM_PANES is not set, then it will be set as large as possible while
-# keeping the shell pane width at least TMUX_VIM_SHELL_MIN_WIDTH (default 132)
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
