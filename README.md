@@ -30,19 +30,19 @@ By default **tvim** will create as many 80-column **vim** panes as possible, whi
 
 This behaviour can be adjusted with the following environment variables.
 
-### TMUX_VIM_ARGS
+### TVIM_VIM_ARGS
 
 Command-line arguments to pass through to **vim**
 
-### TMUX_VIM_PANE_WIDTH
+### TVIM_VIM_PANE_WIDTH
 
 Width of a single **vim** pane in columns (default 80)
 
-### TMUX_VIM_PANES
+### TVIM_VIM_PANES
 
 Optionally specify a fixed number of **vim** panes with this
 
-### TMUX_VIM_SHELL_MIN_WIDTH
+### TVIM_SHELL_MIN_WIDTH
 
 If `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns.
 

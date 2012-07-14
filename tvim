@@ -74,8 +74,8 @@ _tvim_dir() {
 }
 
 _tvim_panes() {
-    local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
-    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
+    local shell_min_width=${TVIM_SHELL_MIN_WIDTH:-132}
+    local vim_pane_width=${TVIM_VIM_PANE_WIDTH:-80}
     local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
 
     #TODO: change client_height to client_width when tmux 1.7 arrives
@@ -132,11 +132,11 @@ _tvim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_panes=${1:-${TMUX_VIM_PANES:-$(_tvim_panes)}}
-    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
+    local vim_panes=${1:-${TVIM_VIM_PANES:-$(_tvim_panes)}}
+    local vim_pane_width=${TVIM_VIM_PANE_WIDTH:-80}
     local split_width=$[ ($vim_pane_width + 1) * $vim_panes - 1 ]
 
-    local vim_args=$TMUX_VIM_ARGS
+    local vim_args=$TVIM_VIM_ARGS
 
     # Split a new pane, start vim in it, and record the pane index
     local tvim_pane=$(tmux split-window -P -h -l $split_width \
