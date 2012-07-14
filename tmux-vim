@@ -128,6 +128,14 @@ _tvim_pre_flight_checks() {
     return 0
 }
 
+# _tvim_op <op> <file>
+# - does _tvim_send_keys :$op space $file
+# - escapes spaces correctly in $file
+_tvim_op() {
+    # Backslash escape all spaces in the file name
+    _tvim_send_keys :$1 space "${2// /\\ }" enter
+}
+
 # _tvim_start [number-of-panes]
 # - split a new tmux pane and start vim in it
 # - the pane id is stored as tvim_pane, using _tvim_store
@@ -163,13 +171,6 @@ _tvim_start() {
 # - keystroke syntax is the same as tmux send-keys
 _tvim_send_keys() {
     tmux send-keys -t $( _tvim_pane_id ) "$@"
-}
-# _tvim_op <op> <file>
-# - does _tvim_send_keys :$op space $file
-# - escapes spaces correctly in $file
-_tvim_op() {
-    # Backslash escape all spaces in the file name
-    _tvim_send_keys :$1 space "${2// /\\ }" enter
 }
 
 # tvim [files...]
