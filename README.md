@@ -40,19 +40,9 @@ Define how tvim split panes.
 
 Command-line arguments to pass through to **vim**
 
-### TVIM_VIM_PANE_WIDTH
+### TVIM_SHELL_WIDTH
 
-Width of a single **vim** pane in columns (default 80)
-
-### TVIM_VIM_PANES
-
-Optionally specify a fixed number of **vim** panes with this
-
-### TVIM_SHELL_MIN_WIDTH
-
-If `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns.
-
-On narrow displays, one **vim** pane will always be created, even if this means we leave less that `TVIM_SHELL_MIN_WIDTH` columns for the shell.
+If `TVIM_SPLIT` is 'HORIZONTAL', then this variable defines the width of the shell pane. The left space is for vim pane. If the left space is less than 80 columns, this variable will be ignored, make sure vim pane is always has more than 80 columns.
 
 ### TVIM_SHELL_HEIGHT
 
