@@ -30,18 +30,23 @@ By default **tmux-vim** will create as many 80-column **vim** panes as possible,
 
 This behaviour can be adjusted with the following environment variables.
 
+### TMUX_VIM_ARGS
+
+Command-line arguments to pass through to **vim**
+
 ### TMUX_VIM_PANE_WIDTH
-* width of a single **vim** pane in columns (default 80)
+
+Width of a single **vim** pane in columns (default 80)
 
 ### TMUX_VIM_PANES
-* optionally specify a fixed number of **vim** panes with this
+
+Optionally specify a fixed number of **vim** panes with this
 
 ### TMUX_VIM_SHELL_MIN_WIDTH
-* if `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns
-* on narrow displays, one **vim** pane will always be created, even if this means we leave less that `TVIM_SHELL_MIN_WIDTH` columns for the shell
 
-### TMUX_VIM_ARGS
-* command-line arguments to pass through to **vim**
+If `TVIM_PANES` is not set, panes will be created to leave a shell pane of at least `TVIM_SHELL_MIN_WIDTH` columns.
+
+On narrow displays, one **vim** pane will always be created, even if this means we leave less that `TVIM_SHELL_MIN_WIDTH` columns for the shell.
 
 ## How's it work?
 
