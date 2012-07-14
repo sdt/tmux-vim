@@ -73,6 +73,13 @@ _tvim_last_dir() {
     _tvim_fetch_or_store tmux_vim_dir "$@"
 }
 
+# _tvim_send_keys [keystrokes...]
+# - sends keystrokes to the vim instance created by tvim
+# - keystroke syntax is the same as tmux send-keys
+_tvim_send_keys() {
+    tmux send-keys -t $( _tvim_pane_id ) "$@"
+}
+
 _tvim_vim_panes() {
     local shell_min_width=${TVIM_SHELL_MIN_WIDTH:-132}
     local vim_pane_width=${TVIM_VIM_PANE_WIDTH:-80}
@@ -149,12 +156,6 @@ _tvim_start() {
     _tvim_last_dir "$PWD"
 }
 
-# _tvim_send_keys [keystrokes...]
-# - sends keystrokes to the vim instance created by tvim
-# - keystroke syntax is the same as tmux send-keys
-_tvim_send_keys() {
-    tmux send-keys -t $( _tvim_pane_id ) "$@"
-}
 # _tvim_op <op> <file>
 # - does _tvim_send_keys :$op space $file
 # - escapes spaces correctly in $file
