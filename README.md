@@ -30,6 +30,8 @@ By default **tvim** will create as many 80-column **vim** panes as possible, whi
 
 This behaviour can be adjusted with the following environment variables.
 
+You can set these variables in ~/.tvimrc.
+
 ### TVIM_SPLIT
 
 Value: ['HORIZONTAL' | 'VERTICAL' ]

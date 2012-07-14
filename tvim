@@ -177,6 +177,8 @@ _tvim_start() {
 # - if no existing tvim instance is running, a new one is spawned
 # - opens the listed files inside the tvim instance
 tvim() {
+    [ -f "$HOME/.tvimrc" ] && source "$HOME/.tvimrc"
+
     _tvim_pre_flight_checks || exit 1
     _tvim_start
     _tvim_send_keys escape  # make sure we're in command mode
