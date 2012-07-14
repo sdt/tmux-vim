@@ -26,7 +26,7 @@ If you close that **vim** session, the pane will be destroyed. The next call to 
 
 ## Configuration
 
-By default **tvim** will create as many 80-column **vim** panes as possible, while leaving at least 132-columns for the shell session on the left.
+By default **tvim** will leave the size of the shell pane as defined by `TVIM_SHELL_WIDTH` or `TVIM_SHELL_HEIGHT`, and let the vim pane occupy the rest space.
 
 This behaviour can be adjusted with the following environment variables.
 
