@@ -77,7 +77,7 @@ _tvim_pane_id() {
     _tvim_fetch_or_store tmux_vim_pane "$@"
 }
 
-_tvim_dir() {
+_tvim_last_dir() {
     _tvim_fetch_or_store tmux_vim_dir "$@"
 }
 
@@ -170,7 +170,7 @@ _tvim_start() {
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
     # ^^^^^ $tvim_pane                  pane_id  ^^
     _tvim_pane_id $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
-    _tvim_dir "$PWD"
+    _tvim_last_dir "$PWD"
 }
 
 # tvim [files...]
@@ -186,7 +186,7 @@ tvim() {
         # If we are now in a different directory than $TDIR, we want to make
         # vim switch to this directory temporarily before opening the files.
         # This obviates any relative path computations.
-        [[ "$PWD" != "$( _tvim_dir )" ]] && _tvim_op cd "$PWD"
+        [[ "$PWD" != "$( _tvim_last_dir )" ]] && _tvim_op cd "$PWD"
 
         # Rather than :edit each file in turn, :badd each file into a new
         # buffer, and then finally switch to the last one with :buffer.
@@ -201,7 +201,7 @@ tvim() {
             _tvim_op badd "$file"   # load a buffer for each file
         done
 
-        [[ "$PWD" != "$( _tvim_dir )" ]] && _tvim_op cd -
+        [[ "$PWD" != "$( _tvim_last_dir )" ]] && _tvim_op cd -
 
         _tvim_op buffer "${!#}"       # switch to the final file
     fi
