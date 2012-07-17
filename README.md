@@ -40,6 +40,8 @@ while leaving at least 132-columns for the shell session on the left.
 
 This behaviour can be adjusted with the following environment variables.
 
+You can set these variables in ~/.tmux-vim.conf.
+
 ### TMUX_VIM_SPLIT
 
 Value: [ 'HORIZONTAL' | 'VERTICAL' ]

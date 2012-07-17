@@ -193,6 +193,8 @@ _tmux_vim_start() {
 # - if no existing tmux_vim instance is running, a new one is spawned
 # - opens the listed files inside the tmux_vim instance
 tmux_vim() {
+    [ -f "$HOME/.tmux-vim.conf" ] && source "$HOME/.tmux-vim.conf"
+
     _tmux_vim_pre_flight_checks || exit 1
     _tmux_vim_start
     _tmux_vim_send_keys escape  # make sure we're in command mode
