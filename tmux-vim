@@ -156,15 +156,26 @@ _tmux_vim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_pane_count=${1:-${TMUX_VIM_VIM_PANE_COUNT:-$(_tmux_vim_vim_pane_count)}}
-    local vim_pane_width=${TMUX_VIM_VIM_PANE_WIDTH:-80}
-    local split_width=$[ ($vim_pane_width + 1) * $vim_pane_count - 1 ]
+    local tmux_vim_pane_split=${TMUX_VIM_SPLIT:-'HORIZONTAL'}
+
+    if [ ${tmux_vim_pane_split} == 'HORIZONTAL' ];then
+        local split_method='h'
+        local vim_pane_count=${1:-${TMUX_VIM_VIM_PANE_COUNT:-$(_tmux_vim_vim_pane_count)}}
+        local vim_pane_width=${TMUX_VIM_VIM_PANE_WIDTH:-80}
+        local split_width=$[ ($vim_pane_width + 1) * $vim_pane_count - 1 ]
+        local split_size=${split_width}
+    else
+        local split_method='v'
+        local shell_height=${TMUX_VIM_SHELL_HEIGHT:-15}
+        local split_height=$shell_height
+        local split_size=${split_height}
+    fi
 
     local vim_args=$TMUX_VIM_VIM_ARGS
     #vim_args+=" -O$vim_pane_count"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index
-    local tmux_vim_pane=$(tmux split-window -P -h -l $split_width \
+    local tmux_vim_pane=$(tmux split-window -P -$split_method -l $split_size \
                         "exec vim $vim_args")
 
     # Now convert the pane index into a global persistent id
@@ -172,6 +183,10 @@ _tmux_vim_start() {
     # ^^^^^ $tmux_vim_pane                  pane_id  ^^
     _tmux_vim_pane_id $(tmux lsp -a | grep ^${tmux_vim_pane}: | grep -o '%[0-9]\+')
     _tmux_vim_last_dir "$PWD"
+
+    if [ ${tmux_vim_pane_split} != 'HORIZONTAL' ]; then
+        tmux swap-pane -UD
+    fi
 }
 
 # tmux_vim [files...]

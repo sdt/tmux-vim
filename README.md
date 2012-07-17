@@ -40,6 +40,14 @@ while leaving at least 132-columns for the shell session on the left.
 
 This behaviour can be adjusted with the following environment variables.
 
+### TMUX_VIM_SPLIT
+
+Value: [ 'HORIZONTAL' | 'VERTICAL' ]
+
+Optional, default is 'HORIZONTAL'.
+
+Define how **tmux-vim** split panes.
+
 ### TMUX_VIM_VIM_ARGS
 
 Optional.
@@ -62,11 +70,21 @@ Specify a fixed number of **vim** panes with this.
 
 Optional, default is 132.
 
+If `TMUX_VIM_SPLIT` is 'HORIZONTAL', then this variable defines the width of the
+shell pane.
+
 If `TMUX_VIM_VIM_PANE_COUNT` is not set, panes will be created to leave a shell
 pane of at least `TMUX_VIM_SHELL_WIDTH` columns.
 
 On narrow displays, one **vim** pane will always be created, even if this means
 we leave less that `TMUX_VIM_SHELL_WIDTH` columns for the shell.
+
+### TMUX_VIM_SHELL_HEIGHT
+
+Optional, default is 15.
+
+If `TMUX_VIM_SPLIT` is 'VERTICAL', then this variable defines the height of the
+shell pane.
 
 How's it work?
 --------------
