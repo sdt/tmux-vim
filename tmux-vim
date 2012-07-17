@@ -89,17 +89,6 @@ _tvim_send_keys() {
     tmux send-keys -t $( _tvim_pane_id ) "$@"
 }
 
-_tvim_vim_pane_count() {
-    local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
-    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
-    local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
-
-    #TODO: change client_height to client_width when tmux 1.7 arrives
-
-    local panes=$[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
-    echo $[ $panes > 0 ? $panes : 1 ]
-}
-
 _tvim_is_running() {
     local pane_id=$( _tvim_pane_id )
     [[ -n $pane_id ]] && tmux lsp -F '#{pane_id}' | grep -q ^$pane_id$
@@ -110,6 +99,17 @@ _tvim_is_running() {
 # - only works for tmux >= 1.5 (but we already checked that)
 _tvim_tmux_version() {
     tmux -V | cut -d' ' -f2
+}
+
+_tvim_vim_pane_count() {
+    local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
+    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
+    local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
+
+    #TODO: change client_height to client_width when tmux 1.7 arrives
+
+    local panes=$[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
+    echo $[ $panes > 0 ? $panes : 1 ]
 }
 
 # _tvim_pre_flight_checks
