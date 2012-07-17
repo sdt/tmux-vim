@@ -35,8 +35,16 @@ You need **tmux** version 1.6 or later.
 Configuration
 -------------
 
-By default **tmux-vim** will create as many 80-column **vim** panes as possible,
-while leaving at least 132-columns for the shell session on the left.
+By default **tmux-vim** will split the shell pane according to the size defined
+by `TMUX_VIM_SHELL_WIDTH` or `TMUX_VIM_SHELL_HEIGHT`, let the vim pane occupy
+the rest space.
+
+In a 'HORIZIONTAL' split, if either `TMUX_VIM_VIM_WINDOW_WIDTH` or
+`TMUX_VIM_VIM_WINDOW_COUNT` is set, the **tmux-vim** will caculate the width of
+the vim pane to ensure it can hold as much `TMUX_VIM_VIM_WINDOW_COUNT` as
+possible and leave shell pane at least `TMUX_VIM_SHELL_WIDTH` width. But if
+current screen can only hold one window size of vim, then `TMUX_VIM_SHELL_WIDTH`
+will be ignored.
 
 This behaviour can be adjusted with the following environment variables.
 
@@ -56,17 +64,24 @@ Optional.
 
 Command-line arguments to pass through to **vim**.
 
-### TMUX_VIM_VIM_PANE_WIDTH
+### TMUX_VIM_VIM_WIDTH
 
 Optional, default is 80.
 
-Width of a single **vim** pane in columns.
+If `TMUX_VIM_SPLIT` is 'HORIZONTAL', then this variable defines the minimum
+width of the vim pane.
 
-### TMUX_VIM_VIM_PANE_COUNT
+### TMUX_VIM_VIM_WINDOW_WIDTH
+
+Optional, default is the same as `TMUV_VIM_VIM_WIDTH`.
+
+Width of a single **vim** window in columns.
+
+### TMUX_VIM_VIM_WINDOW_COUNT
 
 Optional.
 
-Specify a fixed number of **vim** panes with this.
+Specify a fixed number of **vim** windows with this.
 
 ### TMUX_VIM_SHELL_WIDTH
 
@@ -74,9 +89,6 @@ Optional, default is 132.
 
 If `TMUX_VIM_SPLIT` is 'HORIZONTAL', then this variable defines the width of the
 shell pane.
-
-If `TMUX_VIM_VIM_PANE_COUNT` is not set, panes will be created to leave a shell
-pane of at least `TMUX_VIM_SHELL_WIDTH` columns.
 
 On narrow displays, one **vim** pane will always be created, even if this means
 we leave less that `TMUX_VIM_SHELL_WIDTH` columns for the shell.

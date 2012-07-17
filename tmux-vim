@@ -12,11 +12,11 @@
 # Configuration:
 #
 #   TMUX_VIM_VIM_ARGS - command-line args to pass to vim (default none)
-#   TMUX_VIM_VIM_PANE_WIDTH - how wide a single vim pane is (default 80)
-#   TMUX_VIM_VIM_PANE_COUNT - how many vim panes to create
+#   TMUX_VIM_VIM_WINDOW_WIDTH - how wide a single vim pane is (default 80)
+#   TMUX_VIM_VIM_WINDOW_COUNT - how many vim panes to create
 #
-# If TMUX_VIM_VIM_PANE_COUNT is not set, then it will be set as large as possible
-# while keeping the shell pane width at least TMUX_VIM_SHELL_WIDTH
+# If TMUX_VIM_VIM_WINDOW_COUNT is not set, then it will be set as large as
+# possible while keeping the shell pane width at least TMUX_VIM_SHELL_WIDTH
 # (default 132)
 #------------------------------------------------------------------------------
 
@@ -101,17 +101,6 @@ _tmux_vim_tmux_version() {
     tmux -V | cut -d' ' -f2
 }
 
-_tmux_vim_vim_pane_count() {
-    local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
-    local vim_pane_width=${TMUX_VIM_VIM_PANE_WIDTH:-80}
-    local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
-
-    #TODO: change client_height to client_width when tmux 1.7 arrives
-
-    local panes=$[ ( $screen_width - $shell_width ) / ( $vim_pane_width + 1 ) ]
-    echo $[ $panes > 0 ? $panes : 1 ]
-}
-
 # _tmux_vim_pre_flight_checks
 # - make sure all requirements are okay before continuing
 _tmux_vim_pre_flight_checks() {
@@ -160,9 +149,27 @@ _tmux_vim_start() {
 
     if [ ${tmux_vim_pane_split} == 'HORIZONTAL' ];then
         local split_method='h'
-        local vim_pane_count=${1:-${TMUX_VIM_VIM_PANE_COUNT:-$(_tmux_vim_vim_pane_count)}}
-        local vim_pane_width=${TMUX_VIM_VIM_PANE_WIDTH:-80}
-        local split_width=$[ ($vim_pane_width + 1) * $vim_pane_count - 1 ]
+        local vim_width=${TMUX_VIM_VIM_WIDTH:-80}
+        local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
+        #TODO: change client_height to client_width when tmux 1.7 arrives
+        local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
+        local screen_width_left=$[ $screen_width - $shell_width ]
+        if [ -n "${TMUX_VIM_VIM_WINDOW_WIDTH}" ] || [ -n "${TMUX_VIM_VIM_WINDOW_COUNT}" ];then
+            local vim_window_width=${TMUX_VIM_VIM_WINDOW_WIDTH:-$vim_width}
+            local vim_window_count=$[ $screen_width_left / ( $vim_window_width + 1 ) ]
+            local vim_window_count=$[ $vim_window_count > 0 ? $vim_window_count : 1 ]
+            # $vim_window_count is maximum count current screen width can handle,
+            # $TMUX_VIM_VIM_WINDOW_COUNT should not overcome that.
+            [ -n "${TMUX_VIM_VIM_WINDOW_COUNT}" ] && \
+            local vim_window_count=$[ $TMUX_VIM_VIM_WINDOW_COUNT < $vim_window_count ? $TMUX_VIM_VIM_WINDOW_COUNT : $vim_window_count ]
+            local split_width=$[ ($vim_window_width + 1) * $vim_window_count - 1 ]
+        else
+            if [ $screen_width_left -lt $vim_width ];then
+                local split_width=$vim_width
+            else
+                local split_width=$screen_width_left
+            fi
+        fi
         local split_size=${split_width}
     else
         local split_method='v'
@@ -172,7 +179,7 @@ _tmux_vim_start() {
     fi
 
     local vim_args=$TMUX_VIM_VIM_ARGS
-    #vim_args+=" -O$vim_pane_count"  # this is annoying me - turning it off
+    #vim_args+=" -O$vim_window_count"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index
     local tmux_vim_pane=$(tmux split-window -P -$split_method -l $split_size \
