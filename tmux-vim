@@ -11,11 +11,11 @@
 #
 # Configuration:
 #
-#   TMUX_VIM_ARGS - command-line args to pass to vim (default none)
-#   TMUX_VIM_PANE_WIDTH - how wide a single vim pane is (default 80)
-#   TMUX_VIM_PANE_COUNT - how many vim panes to create
+#   TMUX_VIM_VIM_ARGS - command-line args to pass to vim (default none)
+#   TMUX_VIM_VIM_PANE_WIDTH - how wide a single vim pane is (default 80)
+#   TMUX_VIM_VIM_PANE_COUNT - how many vim panes to create
 #
-# If TMUX_VIM_PANE_COUNT is not set, then it will be set as large as possible
+# If TMUX_VIM_VIM_PANE_COUNT is not set, then it will be set as large as possible
 # while keeping the shell pane width at least TMUX_VIM_SHELL_WIDTH
 # (default 132)
 #------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ _tmux_vim_tmux_version() {
 
 _tmux_vim_vim_pane_count() {
     local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
-    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
+    local vim_pane_width=${TMUX_VIM_VIM_PANE_WIDTH:-80}
     local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
 
     #TODO: change client_height to client_width when tmux 1.7 arrives
@@ -156,11 +156,11 @@ _tmux_vim_start() {
         # (shouldn't happen)
     fi
 
-    local vim_pane_count=${1:-${TMUX_VIM_PANE_COUNT:-$(_tmux_vim_vim_pane_count)}}
-    local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
+    local vim_pane_count=${1:-${TMUX_VIM_VIM_PANE_COUNT:-$(_tmux_vim_vim_pane_count)}}
+    local vim_pane_width=${TMUX_VIM_VIM_PANE_WIDTH:-80}
     local split_width=$[ ($vim_pane_width + 1) * $vim_pane_count - 1 ]
 
-    local vim_args=$TMUX_VIM_ARGS
+    local vim_args=$TMUX_VIM_VIM_ARGS
     #vim_args+=" -O$vim_pane_count"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index
