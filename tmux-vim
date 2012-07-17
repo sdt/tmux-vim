@@ -46,62 +46,62 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #------------------------------------------------------------------------------
 
-_tvim_window_id() {
+_tmux_vim_window_id() {
     tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2
 }
 
-# _tvim_store key value
+# _tmux_vim_store key value
 # - stores key/value pair in tmux environment
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
-_tvim_store() {
-    tmux set-environment "${1}_$( _tvim_window_id )" "$2"
+_tmux_vim_store() {
+    tmux set-environment "${1}_$( _tmux_vim_window_id )" "$2"
 }
 
-# _tvim_fetch key
+# _tmux_vim_fetch key
 # - retrieves value from tmux environment
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
-_tvim_fetch() {
-    tmux show-environment | grep "^${1}_$( _tvim_window_id )=" | cut -d= -f2-
+_tmux_vim_fetch() {
+    tmux show-environment | grep "^${1}_$( _tmux_vim_window_id )=" | cut -d= -f2-
 }
 
-_tvim_fetch_or_store() {
+_tmux_vim_fetch_or_store() {
     if [[ $# -gt 1 ]]; then
-        _tvim_store "$@"
+        _tmux_vim_store "$@"
     else
-        _tvim_fetch "$@"
+        _tmux_vim_fetch "$@"
     fi
 }
 
-_tvim_pane_id() {
-    _tvim_fetch_or_store tmux_vim_pane "$@"
+_tmux_vim_pane_id() {
+    _tmux_vim_fetch_or_store tmux_vim_pane "$@"
 }
 
-_tvim_last_dir() {
-    _tvim_fetch_or_store tmux_vim_dir "$@"
+_tmux_vim_last_dir() {
+    _tmux_vim_fetch_or_store tmux_vim_dir "$@"
 }
 
-# _tvim_send_keys [keystrokes...]
-# - sends keystrokes to the vim instance created by tvim
+# _tmux_vim_send_keys [keystrokes...]
+# - sends keystrokes to the vim instance created by tmux_vim
 # - keystroke syntax is the same as tmux send-keys
-_tvim_send_keys() {
-    tmux send-keys -t $( _tvim_pane_id ) "$@"
+_tmux_vim_send_keys() {
+    tmux send-keys -t $( _tmux_vim_pane_id ) "$@"
 }
 
-_tvim_is_running() {
-    local pane_id=$( _tvim_pane_id )
+_tmux_vim_is_running() {
+    local pane_id=$( _tmux_vim_pane_id )
     [[ -n $pane_id ]] && tmux lsp -F '#{pane_id}' | grep -q ^$pane_id$
 }
 
-# _tvim_tmux_version
+# _tmux_vim_tmux_version
 # - return the current tmux version
 # - only works for tmux >= 1.5 (but we already checked that)
-_tvim_tmux_version() {
+_tmux_vim_tmux_version() {
     tmux -V | cut -d' ' -f2
 }
 
-_tvim_vim_pane_count() {
+_tmux_vim_vim_pane_count() {
     local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
     local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
     local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
@@ -112,9 +112,9 @@ _tvim_vim_pane_count() {
     echo $[ $panes > 0 ? $panes : 1 ]
 }
 
-# _tvim_pre_flight_checks
+# _tmux_vim_pre_flight_checks
 # - make sure all requirements are okay before continuing
-_tvim_pre_flight_checks() {
+_tmux_vim_pre_flight_checks() {
     # Check that tmux is actually running
     if [[ -z "$TMUX" ]]; then
         echo tmux session not detected 1>&2
@@ -128,7 +128,7 @@ _tvim_pre_flight_checks() {
     fi
 
     # Check tmux is v1.6 or greater
-    if [[ $( _tvim_tmux_version ) < 1.6 ]]; then
+    if [[ $( _tmux_vim_tmux_version ) < 1.6 ]]; then
         echo tmux 1.6 or greater is required 1>&2
         return 1
     fi
@@ -136,27 +136,27 @@ _tvim_pre_flight_checks() {
     return 0
 }
 
-# _tvim_op <op> <file>
-# - does _tvim_send_keys :$op space $file
+# _tmux_vim_op <op> <file>
+# - does _tmux_vim_send_keys :$op space $file
 # - escapes spaces correctly in $file
-_tvim_op() {
+_tmux_vim_op() {
     # Backslash escape all spaces in the file name
-    _tvim_send_keys :$1 space "${2// /\\ }" enter
+    _tmux_vim_send_keys :$1 space "${2// /\\ }" enter
 }
 
-# _tvim_start [number-of-panes]
+# _tmux_vim_start [number-of-panes]
 # - split a new tmux pane and start vim in it
-# - the pane id is stored as tvim_pane, using _tvim_store
-_tvim_start() {
-    if _tvim_is_running; then
-        # TVIM already exists - try to select that pane
-        tmux select-pane -t $( _tvim_pane_id ) && return
+# - the pane id is stored as tmux_vim_pane, using _tmux_vim_store
+_tmux_vim_start() {
+    if _tmux_vim_is_running; then
+        # tmux_vim already exists - try to select that pane
+        tmux select-pane -t $( _tmux_vim_pane_id ) && return
 
         # If we get here, that pane no longer exists, so fall thru
         # (shouldn't happen)
     fi
 
-    local vim_pane_count=${1:-${TMUX_VIM_PANE_COUNT:-$(_tvim_vim_pane_count)}}
+    local vim_pane_count=${1:-${TMUX_VIM_PANE_COUNT:-$(_tmux_vim_vim_pane_count)}}
     local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
     local split_width=$[ ($vim_pane_width + 1) * $vim_pane_count - 1 ]
 
@@ -164,30 +164,30 @@ _tvim_start() {
     #vim_args+=" -O$vim_pane_count"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index
-    local tvim_pane=$(tmux split-window -P -h -l $split_width \
+    local tmux_vim_pane=$(tmux split-window -P -h -l $split_width \
                         "exec vim $vim_args")
 
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
-    # ^^^^^ $tvim_pane                  pane_id  ^^
-    _tvim_pane_id $(tmux lsp -a | grep ^${tvim_pane}: | grep -o '%[0-9]\+')
-    _tvim_last_dir "$PWD"
+    # ^^^^^ $tmux_vim_pane                  pane_id  ^^
+    _tmux_vim_pane_id $(tmux lsp -a | grep ^${tmux_vim_pane}: | grep -o '%[0-9]\+')
+    _tmux_vim_last_dir "$PWD"
 }
 
-# tvim [files...]
-# - if no existing tvim instance is running, a new one is spawned
-# - opens the listed files inside the tvim instance
-tvim() {
-    _tvim_pre_flight_checks || exit 1
-    _tvim_start
-    _tvim_send_keys escape  # make sure we're in command mode
+# tmux_vim [files...]
+# - if no existing tmux_vim instance is running, a new one is spawned
+# - opens the listed files inside the tmux_vim instance
+tmux_vim() {
+    _tmux_vim_pre_flight_checks || exit 1
+    _tmux_vim_start
+    _tmux_vim_send_keys escape  # make sure we're in command mode
 
     if [[ $# -gt 0 ]]; then
 
         # If we are now in a different directory than $TDIR, we want to make
         # vim switch to this directory temporarily before opening the files.
         # This obviates any relative path computations.
-        [[ "$PWD" != "$( _tvim_last_dir )" ]] && _tvim_op cd "$PWD"
+        [[ "$PWD" != "$( _tmux_vim_last_dir )" ]] && _tmux_vim_op cd "$PWD"
 
         # Rather than :edit each file in turn, :badd each file into a new
         # buffer, and then finally switch to the last one with :buffer.
@@ -199,16 +199,16 @@ tvim() {
         # Errant escape keys cause the whole open to just silently fail.
         # This approach pushes the user interaction right to the end.
         for file in "$@"; do
-            _tvim_op badd "$file"   # load a buffer for each file
+            _tmux_vim_op badd "$file"   # load a buffer for each file
         done
 
-        [[ "$PWD" != "$( _tvim_last_dir )" ]] && _tvim_op cd -
+        [[ "$PWD" != "$( _tmux_vim_last_dir )" ]] && _tmux_vim_op cd -
 
-        _tvim_op buffer "${!#}"       # switch to the final file
+        _tmux_vim_op buffer "${!#}"       # switch to the final file
     fi
 
-    tmux select-pane -t $( _tvim_pane_id )
+    tmux select-pane -t $( _tmux_vim_pane_id )
 }
 
-tvim "$@"
+tmux_vim "$@"
 
