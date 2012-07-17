@@ -16,7 +16,7 @@
 #   TMUX_VIM_PANE_COUNT - how many vim panes to create
 #
 # If TMUX_VIM_PANE_COUNT is not set, then it will be set as large as possible
-# while keeping the shell pane width at least TMUX_VIM_SHELL_MIN_WIDTH
+# while keeping the shell pane width at least TMUX_VIM_SHELL_WIDTH
 # (default 132)
 #------------------------------------------------------------------------------
 
@@ -102,13 +102,13 @@ _tvim_tmux_version() {
 }
 
 _tvim_vim_pane_count() {
-    local shell_min_width=${TMUX_VIM_SHELL_MIN_WIDTH:-132}
+    local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
     local vim_pane_width=${TMUX_VIM_PANE_WIDTH:-80}
     local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
 
     #TODO: change client_height to client_width when tmux 1.7 arrives
 
-    local panes=$[ ( $screen_width - $shell_min_width ) / ( $vim_pane_width + 1 ) ]
+    local panes=$[ ( $screen_width - $shell_width ) / ( $vim_pane_width + 1 ) ]
     echo $[ $panes > 0 ? $panes : 1 ]
 }
 

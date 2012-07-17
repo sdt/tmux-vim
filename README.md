@@ -58,15 +58,15 @@ Optional.
 
 Specify a fixed number of **vim** panes with this.
 
-### TMUX_VIM_SHELL_MIN_WIDTH
+### TMUX_VIM_SHELL_WIDTH
 
 Optional, default is 132.
 
 If `TMUX_VIM_PANE_COUNT` is not set, panes will be created to leave a shell pane
-of at least `TMUX_VIM_SHELL_MIN_WIDTH` columns.
+of at least `TMUX_VIM_SHELL_WIDTH` columns.
 
 On narrow displays, one **vim** pane will always be created, even if this means
-we leave less that `TMUX_VIM_SHELL_MIN_WIDTH` columns for the shell.
+we leave less that `TMUX_VIM_SHELL_WIDTH` columns for the shell.
 
 How's it work?
 --------------
