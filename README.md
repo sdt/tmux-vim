@@ -11,8 +11,13 @@ Usage
 
 Use **tmux-vim** just like you'd use **vim**.
 
-`tmux-vim [file] [files...]`
+At the initial call, it accepts any valid args of vim.
 
+    tmux-vim [-h|--help] [--version] [ANY VALID VIM ARGS] [file ..]
+
+At the further call. any args passed to **tmux-vim** will be treated as files.
+
+    tmux-vim [file ..]
 
 The first time you run it, a new pane will be created besides your current
 **tmux** window according to `TMUX_VIM_SPLIT`, running an instance of **vim**.
