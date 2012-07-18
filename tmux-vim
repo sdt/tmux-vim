@@ -163,6 +163,8 @@ _tmux_vim_start() {
             [ -n "${TMUX_VIM_VIM_WINDOW_COUNT}" ] && \
             local vim_window_count=$[ $TMUX_VIM_VIM_WINDOW_COUNT < $vim_window_count ? $TMUX_VIM_VIM_WINDOW_COUNT : $vim_window_count ]
             local split_width=$[ ($vim_window_width + 1) * $vim_window_count - 1 ]
+
+            [ "${TMUX_VIM_VIM_WINDOW_SPLIT}" == 'TRUE' ] && local vim_args+=" -O$vim_window_count"
         else
             if [ $screen_width_left -lt $vim_width ];then
                 local split_width=$vim_width
@@ -179,7 +181,6 @@ _tmux_vim_start() {
     fi
 
     local vim_args=$TMUX_VIM_VIM_ARGS
-    #vim_args+=" -O$vim_window_count"  # this is annoying me - turning it off
 
     # Split a new pane, start vim in it, and record the pane index
     local tmux_vim_pane=$(tmux split-window -P -$split_method -l $split_size \
