@@ -79,7 +79,7 @@ _tmux_vim_pane_id() {
 }
 
 _tmux_vim_last_dir() {
-    _tmux_vim_fetch_or_store tmux_vim_dir "$@"
+    _tmux_vim_fetch_or_store tmux_vim_last_dir "$@"
 }
 
 # _tmux_vim_send_keys [keystrokes...]
