@@ -13,8 +13,9 @@ Use **tmux-vim** just like you'd use **vim**.
 
 `tmux-vim [file] [files...]`
 
-The first time you run it, a new pane will be created on the right hand side of
-your **tmux** window, running an instance of **vim**.
+
+The first time you run it, a new pane will be created besides your current
+**tmux** window according to `TMUX_VIM_SPLIT`, running an instance of **vim**.
 
 Further calls to **tmux-vim** will open the files in new buffers in the same
 **vim** session.
