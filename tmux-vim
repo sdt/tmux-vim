@@ -7,7 +7,13 @@
 #
 # Usage:
 #
-#   tmux-vim [file [files...]]
+#   Initial call:
+#
+#       tmux-vim [-h|--help] [--version] [ANY VALID VIM ARGS] [file ..]
+#
+#   Further call:
+#
+#       tmux-vim [file ..]
 #
 # Configuration:
 #
@@ -45,6 +51,28 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #------------------------------------------------------------------------------
+
+TMUX_VIM_VERSION='0.1'
+
+_tmux_vim_help() {
+    cat <<EOF
+
+Usage:
+
+    Initial call could accept any valide vim args which will be pass to vim.
+
+        tmux-vim [-h|--help] [--version] [ANY VALID VIM ARGS] [file ..]
+
+    Further call only accept filenames, they will be opend as buffers in the
+    openning vim pane.
+
+        tmux-vim [file ..]
+EOF
+}
+
+_tmux_vim_version() {
+    echo $TMUX_VIM_VERSION
+}
 
 _tmux_vim_window_id() {
     tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2
@@ -164,7 +192,7 @@ _tmux_vim_start() {
             local vim_window_count=$[ $TMUX_VIM_VIM_WINDOW_COUNT < $vim_window_count ? $TMUX_VIM_VIM_WINDOW_COUNT : $vim_window_count ]
             local split_width=$[ ($vim_window_width + 1) * $vim_window_count - 1 ]
 
-            [ "${TMUX_VIM_VIM_WINDOW_SPLIT}" == 'TRUE' ] && local vim_args+=" -O$vim_window_count"
+            [ "${TMUX_VIM_VIM_WINDOW_SPLIT}" == 'TRUE' ] && vim_args+=" -O$vim_window_count"
         else
             if [ $screen_width_left -lt $vim_width ];then
                 local split_width=$vim_width
@@ -180,7 +208,7 @@ _tmux_vim_start() {
         local split_size=${split_height}
     fi
 
-    local vim_args=$TMUX_VIM_VIM_ARGS
+    vim_args+=" $TMUX_VIM_VIM_ARGS"
 
     # Split a new pane, start vim in it, and record the pane index
     local tmux_vim_pane=$(tmux split-window -P -$split_method -l $split_size \
@@ -208,7 +236,6 @@ tmux_vim() {
     _tmux_vim_send_keys escape  # make sure we're in command mode
 
     if [[ $# -gt 0 ]]; then
-
         # If we are now in a different directory than $TDIR, we want to make
         # vim switch to this directory temporarily before opening the files.
         # This obviates any relative path computations.
@@ -235,5 +262,26 @@ tmux_vim() {
     tmux select-pane -t $( _tmux_vim_pane_id )
 }
 
-tmux_vim "$@"
+while test $# != 0
+do
+    case "$1" in
+        -h | --help)
+            _tmux_vim_help
+            exit 0
+            ;;
+        --version)
+            _tmux_vim_version
+            exit 0
+            ;;
+        *)
+            if ! _tmux_vim_is_running; then
+                vim_args+=" $1"
+            else
+                files+=" $1"
+            fi
+            ;;
+    esac
+    shift
+done
 
+tmux_vim $files
