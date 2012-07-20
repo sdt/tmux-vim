@@ -229,7 +229,7 @@ tmux_vim() {
 
         [[ "$PWD" != "$( _tmux_vim_last_dir )" ]] && _tmux_vim_op cd -
 
-        _tmux_vim_op buffer "${!#}"       # switch to the final file
+        _tmux_vim_op blast              # switch to the final file
     fi
 
     tmux select-pane -t $( _tmux_vim_pane_id )
