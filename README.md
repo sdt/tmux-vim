@@ -65,6 +65,14 @@ Optional.
 
 Command-line arguments to pass through to **vim**.
 
+### TMUX_VIM_VIM_BIN
+
+Optional, default is 'vim'.
+
+The binary executable used to run **vim**. Useful if you're using
+[MacVim](http://code.google.com/p/macvim/) and have another binary like `mvim`
+which you'd like to use.
+
 ### TMUX_VIM_VIM_WIDTH
 
 Optional, default is 80.
