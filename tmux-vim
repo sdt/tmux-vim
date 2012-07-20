@@ -12,6 +12,7 @@
 # Configuration:
 #
 #   TMUX_VIM_VIM_ARGS - command-line args to pass to vim (default none)
+#   TMUX_VIM_VIM_BIN  - executable to use for vim (default vim)
 #   TMUX_VIM_VIM_WINDOW_WIDTH - how wide a single vim pane is (default 80)
 #   TMUX_VIM_VIM_WINDOW_COUNT - how many vim panes to create
 #
@@ -181,10 +182,11 @@ _tmux_vim_start() {
     fi
 
     local vim_args=$TMUX_VIM_VIM_ARGS
+    local vim_bin=${TMUX_VIM_VIM_BIN:-vim}
 
     # Split a new pane, start vim in it, and record the pane index
     local tmux_vim_pane=$(tmux split-window -P -$split_method -l $split_size \
-                        "exec vim $vim_args")
+                        "exec $vim_bin $vim_args")
 
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
