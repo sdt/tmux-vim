@@ -184,9 +184,7 @@ _tmux_vim_start() {
 
     v|V)
         local split_method='v'
-        local shell_height=${TMUX_VIM_SHELL_HEIGHT:-15}
-        local split_height=$shell_height
-        local split_size=$split_height
+        local split_size=${TMUX_VIM_SHELL_HEIGHT:-15}
         local swap_panes=1
         ;;
 
@@ -211,7 +209,7 @@ _tmux_vim_start() {
 
     # Swap the pane if we split vertically - tmux puts the new one on the bottom,
     # but we want it on top.
-    [[ -n $swap_panes ]] && tmux swap-pane -UD
+    [[ -n $swap_panes ]] && tmux swap-pane -D
 }
 
 # tmux_vim [files...]
