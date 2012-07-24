@@ -186,6 +186,7 @@ _tmux_vim_start() {
     #   1 column border between shell & vim
     #   1 column border between vim sub-windows
     #   split-size = ww - sw - 1
+    #              = vc * (vw + 1) - 1
 
     # Something like?
     # TMUX_VIM_LAYOUT=shell-width:80
@@ -210,51 +211,41 @@ _tmux_vim_start() {
         local split_size=${split_args:-15}
         ;;
 
+    vim-width)
+        layout_args=${layout_args:-80}
+        local ww=$( _tmux_vim_pane_size width )
+        local vc=1
+        local vw=$layout_args
+        if [[ $layout_args =~ 'x' ]]; then
+            vw=$( echo $layout_args | cut -dx -f1 )
+            vc=$( echo $layout_args | cut -dx -f2 )
+        fi
+        if [[ $vc == '*' ]]; then
+            local sw=80 #TODO: how to specify this?
+            vc=$[ ($ww - $sw) / ($vw + 1) ]
+            [[ $vc == 0 ]] && vc=1
+        fi
+        [[ -n "$TMUX_VIM_VIM_WINDOW_SPLIT" ]] && vim_args+=" -O$vc"
+
+        local split_method='h'
+        local split_size=$[ $vc * ($vw + 1) - 1 ]
+        echo $vim_args
+        ;;
+
+    vim-height)
+        local wh=$( _tmux_vim_pane_size height )
+        local vh=${layout_args}
+
+        local split_method='v'
+        local split_size=$[ $wh - $vh - 1]
+        ;;
+
     *)
         echo Unknown TMUX_VIM_LAYOUT="$TMUX_VIM_LAYOUT"
+        exit 1
         ;;
 
     esac
-
-
-#        local vim_width=${TMUX_VIM_VIM_WIDTH:-80}
-#        local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
-#        local screen_width=$( _tmux_vim_screen_width )
-#        local screen_width_left=$[ $screen_width - $shell_width ]
-#        if [[ -n "$TMUX_VIM_VIM_WINDOW_WIDTH" ]] || [[ -n "$TMUX_VIM_VIM_WINDOW_COUNT" ]]; then
-#            local vim_window_width=${TMUX_VIM_VIM_WINDOW_WIDTH:-$vim_width}
-#            local vim_window_count=$[ $screen_width_left / ( $vim_window_width + 1 ) ]
-#            vim_window_count=$[ $vim_window_count > 0 ? $vim_window_count : 1 ]
-#            # $vim_window_count is maximum count current screen width can handle,
-#            # $TMUX_VIM_VIM_WINDOW_COUNT should not overcome that.
-#            if [[ -n "$TMUX_VIM_VIM_WINDOW_COUNT" ]]; then
-#                vim_window_count=$[ $TMUX_VIM_VIM_WINDOW_COUNT < $vim_window_count ? $TMUX_VIM_VIM_WINDOW_COUNT : $vim_window_count ]
-#            fi
-#            local split_width=$[ ($vim_window_width + 1) * $vim_window_count - 1 ]
-#
-#            [[ -n "$TMUX_VIM_VIM_WINDOW_SPLIT" ]] && vim_args+=" -O$vim_window_count"
-#        else
-#            if [[ $screen_width_left -lt $vim_width ]]; then
-#                local split_width=$vim_width
-#            else
-#                local split_width=$screen_width_left
-#            fi
-#        fi
-#        local split_size=$split_width
-#        ;;
-#
-#    v|V)
-#        local split_method='v'
-#        local split_size=${TMUX_VIM_SHELL_HEIGHT:-15}
-#        local swap_panes=1
-#        ;;
-#
-#    *)
-#        echo Unexpected TMUX_VIM_SPLIT=$TMUX_VIM_SPLIT. Please specify h or v.
-#        exit 1
-#        ;;
-#
-#    esac
 
     local vim_bin=${TMUX_VIM_VIM_BIN:-vim}
 
