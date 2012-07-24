@@ -49,7 +49,13 @@ will be ignored.
 
 This behaviour can be adjusted with the following environment variables.
 
-You can set these variables in ~/.tmux-vim.conf.
+### TMUX_VIM_CONFIG
+
+Path to configuration file.
+
+Optional, default is `~/.tmux-vim.conf`.
+
+The remaining variables can be set in this config file.
 
 ### TMUX_VIM_SPLIT
 

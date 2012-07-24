@@ -11,9 +11,10 @@
 #
 # Configuration:
 #
+#   TMUX_VIM_CONFIG - path to config file, defaults to ~/.tmux-vim.conf
+#
 #   TMUX_VIM_VIM_ARGS - command-line args to pass to vim (default none)
 #   TMUX_VIM_VIM_BIN  - executable to use for vim (default vim)
-#   TMUX_VIM_VIM_WINDOW_WIDTH - how wide a single vim pane is (default 80)
 #   TMUX_VIM_VIM_WINDOW_COUNT - how many vim panes to create
 #
 #   TMUX_VIM_VIM_WINDOW_SPLIT - if set, vim window is autosplit into panes
@@ -206,7 +207,8 @@ _tmux_vim_start() {
 # - if no existing tmux_vim instance is running, a new one is spawned
 # - opens the listed files inside the tmux_vim instance
 tmux_vim() {
-    [ -f "$HOME/.tmux-vim.conf" ] && source "$HOME/.tmux-vim.conf"
+    local rcfile=${TMUX_VIM_CONFIG:-"$HOME/.tmux-vim.conf"}
+    [ -f "$rcfile" ] && source "$rcfile"
 
     _tmux_vim_pre_flight_checks || exit 1
     _tmux_vim_start
