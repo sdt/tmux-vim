@@ -146,3 +146,11 @@ This appears to work, but there may still be issues lurking.
 When the **vim** pane is created, the current directory is saved in the **tmux**
 environment. The directory is used when computing relative paths. If the user
 manually changes the vim working directory, the relative paths will break.
+
+Acknowledgements
+----------------
+
+A big thank you to the following contributors:
+
+* [Nathan Smith](http://github.com/smith)
+* [Techlive Zheng](http://github.com/techlivezheng)
