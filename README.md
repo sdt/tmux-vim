@@ -14,11 +14,12 @@ Use **tmux-vim** just like you'd use **vim**.
 `tmux-vim [file] [files...]`
 
 
-The first time you run it, a new pane will be created besides your current
+The first time you run it, a new pane will be created within your current
 **tmux** window according to `TMUX_VIM_SPLIT`, running an instance of **vim**.
 
 Further calls to **tmux-vim** will open the files in new buffers in the same
-**vim** session.
+**vim** session. This works in all panes within that **tmux** window, even ones
+created after the **vim** session has been started.
 
 If you close that **vim** session, the pane will be destroyed. The next call to
 **tmux-vim** will create a new one.
@@ -27,6 +28,12 @@ Installation
 ------------
 
 Copy **tmux-vim** to somewhere in your path.
+
+Alternatively, you can do something like this in your `.bashrc`:
+
+    if [[ -n $TMUX ]]; then
+        vi() { ~/projectstmux-vim/tmux-vim "$@"; }
+    fi
 
 Requirements
 ------------
@@ -38,14 +45,15 @@ Configuration
 
 By default **tmux-vim** will split the shell pane according to the size defined
 by `TMUX_VIM_SHELL_WIDTH` or `TMUX_VIM_SHELL_HEIGHT`, let the vim pane occupy
-the rest space.
+the remaining space.
 
-In a 'HORIZIONTAL' split, if either `TMUX_VIM_VIM_WINDOW_WIDTH` or
-`TMUX_VIM_VIM_WINDOW_COUNT` is set, the **tmux-vim** will caculate the width of
+In a horizontal split, if either `TMUX_VIM_VIM_WINDOW_WIDTH` or
+`TMUX_VIM_VIM_WINDOW_COUNT` is set, **tmux-vim** will calculate the width of
 the vim pane to ensure it can hold as much `TMUX_VIM_VIM_WINDOW_COUNT` as
 possible and leave shell pane at least `TMUX_VIM_SHELL_WIDTH` width. But if
 current screen can only hold one window size of vim, then `TMUX_VIM_SHELL_WIDTH`
 will be ignored.
+
 
 This behaviour can be adjusted with the following environment variables.
 
@@ -110,7 +118,7 @@ calculation of `$tmux_vim_window_count`.
 
 Optional, default is 132.
 
-If `TMUX_VIM_SPLIT` is 'HORIZONTAL', then this variable defines the width of the
+If `TMUX_VIM_SPLIT` is **H**orizontal, then this variable defines the width of the
 shell pane.
 
 On narrow displays, one **vim** pane will always be created, even if this means
@@ -120,7 +128,7 @@ we leave less that `TMUX_VIM_SHELL_WIDTH` columns for the shell.
 
 Optional, default is 15.
 
-If `TMUX_VIM_SPLIT` is 'VERTICAL', then this variable defines the height of the
+If `TMUX_VIM_SPLIT` is **V**ertical, then this variable defines the height of the
 shell pane.
 
 How's it work?
