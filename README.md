@@ -59,11 +59,14 @@ The remaining variables can be set in this config file.
 
 ### TMUX_VIM_SPLIT
 
-Value: [ 'HORIZONTAL' | 'VERTICAL' ]
+Value: [ h | v ]
 
-Optional, default is 'HORIZONTAL'.
+Optional, default is horizontal.
 
-Define how **tmux-vim** split panes.
+Define how **tmux-vim** splits panes.
+
+* **h** = Horizontally, vim to the right.
+* **v** = Vertically, vim on top.
 
 ### TMUX_VIM_VIM_ARGS
 

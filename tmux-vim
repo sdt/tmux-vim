@@ -149,10 +149,11 @@ _tmux_vim_start() {
         # (shouldn't happen)
     fi
 
-    local tmux_vim_pane_split=${TMUX_VIM_SPLIT:-'HORIZONTAL'}
     local vim_args=$TMUX_VIM_VIM_ARGS
 
-    if [ $tmux_vim_pane_split == 'HORIZONTAL' ]; then
+    case ${TMUX_VIM_SPLIT:0:1} in
+
+    h|H|'')
         local split_method='h'
         local vim_width=${TMUX_VIM_VIM_WIDTH:-80}
         local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
@@ -179,12 +180,22 @@ _tmux_vim_start() {
             fi
         fi
         local split_size=$split_width
-    else
+        ;;
+
+    v|V)
         local split_method='v'
         local shell_height=${TMUX_VIM_SHELL_HEIGHT:-15}
         local split_height=$shell_height
         local split_size=$split_height
-    fi
+        local swap_panes=1
+        ;;
+
+    *)
+        echo Unexpected TMUX_VIM_SPLIT=$TMUX_VIM_SPLIT. Please specify h or v.
+        exit 1
+        ;;
+
+    esac
 
     local vim_bin=${TMUX_VIM_VIM_BIN:-vim}
 
@@ -198,9 +209,9 @@ _tmux_vim_start() {
     _tmux_vim_pane_id $(tmux lsp -a | grep ^$tmux_vim_pane: | grep -o '%[0-9]\+')
     _tmux_vim_last_dir "$PWD"
 
-    if [ $tmux_vim_pane_split != 'HORIZONTAL' ]; then
-        tmux swap-pane -UD
-    fi
+    # Swap the pane if we split vertically - tmux puts the new one on the bottom,
+    # but we want it on top.
+    [[ -n $swap_panes ]] && tmux swap-pane -UD
 }
 
 # tmux_vim [files...]
