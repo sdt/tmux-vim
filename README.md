@@ -94,12 +94,8 @@ Specify a fixed number of **vim** windows with this.
 
 ### TMUX_VIM_VIM_WINDOW_SPLIT
 
-Value: [ 'TRUE' | 'FALSE' ]
-
-Optional, default is 'FALSE'.
-
-If this variable is set to 'TRUE', then the vim will be splitted according to
-the caculation of `$tmux_vim_window_count`.
+If this variable is set, then the vim will be splitted according to the
+calculation of `$tmux_vim_window_count`.
 
 ### TMUX_VIM_SHELL_WIDTH
 
