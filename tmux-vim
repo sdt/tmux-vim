@@ -50,6 +50,11 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #------------------------------------------------------------------------------
 
+_tmux_vim_die() {
+    echo "$@" 2>&1
+    exit 1
+}
+
 _tmux_vim_window_id() {
     tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2
 }
@@ -116,20 +121,17 @@ _tmux_vim_tmux_version() {
 _tmux_vim_pre_flight_checks() {
     # Check that tmux is actually running
     if [[ -z "$TMUX" ]]; then
-        echo tmux session not detected 1>&2
-        return 1
+        _tmux_vim_die tmux session not detected
     fi
 
     # Check that tmux supports the -V command (>= v1.5)
     if ! tmux -V 1>/dev/null 2>/dev/null ; then
-        echo tmux 1.6 or greater is required 1>&2
-        return 1
+        _tmux_vim_die tmux 1.6 or greater is required
     fi
 
     # Check tmux is v1.6 or greater
     if [[ $( _tmux_vim_tmux_version ) < 1.6 ]]; then
-        echo tmux 1.6 or greater is required 1>&2
-        return 1
+        _tmux_vim_die tmux 1.6 or greater is required
     fi
 
     return 0
@@ -241,8 +243,7 @@ _tmux_vim_start() {
         ;;
 
     *)
-        echo Unknown TMUX_VIM_LAYOUT="$TMUX_VIM_LAYOUT"
-        exit 1
+        _tmux_vim_die Unknown TMUX_VIM_LAYOUT="$TMUX_VIM_LAYOUT"
         ;;
 
     esac
