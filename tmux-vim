@@ -160,20 +160,20 @@ _tmux_vim_start() {
         #TODO: change client_height to client_width when tmux 1.7 arrives
         local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
         local screen_width_left=$[ $screen_width - $shell_width ]
-        if [ -n "$TMUX_VIM_VIM_WINDOW_WIDTH" ] || [ -n "$TMUX_VIM_VIM_WINDOW_COUNT" ]; then
+        if [[ -n "$TMUX_VIM_VIM_WINDOW_WIDTH" ]] || [[ -n "$TMUX_VIM_VIM_WINDOW_COUNT" ]]; then
             local vim_window_width=${TMUX_VIM_VIM_WINDOW_WIDTH:-$vim_width}
             local vim_window_count=$[ $screen_width_left / ( $vim_window_width + 1 ) ]
             vim_window_count=$[ $vim_window_count > 0 ? $vim_window_count : 1 ]
             # $vim_window_count is maximum count current screen width can handle,
             # $TMUX_VIM_VIM_WINDOW_COUNT should not overcome that.
-            if [ -n "$TMUX_VIM_VIM_WINDOW_COUNT" ]; then
+            if [[ -n "$TMUX_VIM_VIM_WINDOW_COUNT" ]]; then
                 vim_window_count=$[ $TMUX_VIM_VIM_WINDOW_COUNT < $vim_window_count ? $TMUX_VIM_VIM_WINDOW_COUNT : $vim_window_count ]
             fi
             local split_width=$[ ($vim_window_width + 1) * $vim_window_count - 1 ]
 
-            [ -n "$TMUX_VIM_VIM_WINDOW_SPLIT" ] && vim_args+=" -O$vim_window_count"
+            [[ -n "$TMUX_VIM_VIM_WINDOW_SPLIT" ]] && vim_args+=" -O$vim_window_count"
         else
-            if [ $screen_width_left -lt $vim_width ]; then
+            if [[ $screen_width_left -lt $vim_width ]]; then
                 local split_width=$vim_width
             else
                 local split_width=$screen_width_left
@@ -217,7 +217,7 @@ _tmux_vim_start() {
 # - opens the listed files inside the tmux_vim instance
 tmux_vim() {
     local rcfile=${TMUX_VIM_CONFIG:-"$HOME/.tmux-vim.conf"}
-    [ -f "$rcfile" ] && source "$rcfile"
+    [[ -f "$rcfile" ]] && source "$rcfile"
 
     _tmux_vim_pre_flight_checks || exit 1
     _tmux_vim_start
