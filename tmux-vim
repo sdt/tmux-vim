@@ -147,6 +147,7 @@ _tmux_vim_start() {
     fi
 
     local tmux_vim_pane_split=${TMUX_VIM_SPLIT:-'HORIZONTAL'}
+    local vim_args=$TMUX_VIM_VIM_ARGS
 
     if [ $tmux_vim_pane_split == 'HORIZONTAL' ];then
         local split_method='h'
@@ -165,7 +166,7 @@ _tmux_vim_start() {
             local vim_window_count=$[ $TMUX_VIM_VIM_WINDOW_COUNT < $vim_window_count ? $TMUX_VIM_VIM_WINDOW_COUNT : $vim_window_count ]
             local split_width=$[ ($vim_window_width + 1) * $vim_window_count - 1 ]
 
-            [ "$TMUX_VIM_VIM_WINDOW_SPLIT" == 'TRUE' ] && local vim_args+=" -O$vim_window_count"
+            [ -n "$TMUX_VIM_VIM_WINDOW_SPLIT" ] && vim_args+=" -O$vim_window_count"
         else
             if [ $screen_width_left -lt $vim_width ];then
                 local split_width=$vim_width
@@ -181,7 +182,6 @@ _tmux_vim_start() {
         local split_size=$split_height
     fi
 
-    local vim_args=$TMUX_VIM_VIM_ARGS
     local vim_bin=${TMUX_VIM_VIM_BIN:-vim}
 
     # Split a new pane, start vim in it, and record the pane index
