@@ -70,6 +70,12 @@ _tmux_vim_fetch() {
     tmux show-environment | grep "^${1}_$( _tmux_vim_window_id )=" | cut -d= -f2-
 }
 
+# _tmux_vim_pane_size width|height
+# - gets height or width of current pane
+_tmux_vim_pane_size() {
+    tmux lsp -F "#{pane_id}=#{pane_$1}" | grep ^$TMUX_PANE= | cut -d= -f2
+}
+
 _tmux_vim_fetch_or_store() {
     if [[ $# -gt 1 ]]; then
         _tmux_vim_store "$@"
@@ -157,8 +163,7 @@ _tmux_vim_start() {
         local split_method='h'
         local vim_width=${TMUX_VIM_VIM_WIDTH:-80}
         local shell_width=${TMUX_VIM_SHELL_WIDTH:-132}
-        #TODO: change client_height to client_width when tmux 1.7 arrives
-        local screen_width=$( tmux lsc -t $TMUX_PANE -F '#{client_height}' )
+        local screen_width=$( _tmux_vim_pane_size width )
         local screen_width_left=$[ $screen_width - $shell_width ]
         if [[ -n "$TMUX_VIM_VIM_WINDOW_WIDTH" ]] || [[ -n "$TMUX_VIM_VIM_WINDOW_COUNT" ]]; then
             local vim_window_width=${TMUX_VIM_VIM_WINDOW_WIDTH:-$vim_width}
