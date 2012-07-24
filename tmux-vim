@@ -55,8 +55,21 @@ _die() {
     exit 1
 }
 
+# _parse_config cfg key default
+# - Given a $cfg like key1:value1,key2:value2,key3:value3
+#   returns the value matching $key, defaulting to $default
+_parse_config() {
+    local cfg="$1"
+    local key=$2
+    local default=$3
+
+    local value=$( echo ,$cfg, | sed -E 's/^.*,'$key'://' | cut -d, -f 1 )
+    echo ${value:-$default}
+}
+
 _tmux_window_id() {
-    tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2
+    tmux lsp -a -F '#{pane_id}=#{window_index}' |\
+        grep ^$TMUX_PANE= | cut -d= -f2
 }
 
 # _tmux_store key value
