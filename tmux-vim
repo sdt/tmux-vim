@@ -11,17 +11,10 @@
 #
 # Configuration:
 #
-#   TMUX_VIM_CONFIG - path to config file, defaults to ~/.tmux-vim.conf
-#
+#   TMUX_VIM_CONFIG   - path to config file (default ~/.tmux-vim.conf)
 #   TMUX_VIM_VIM_ARGS - command-line args to pass to vim (default none)
 #   TMUX_VIM_VIM_BIN  - executable to use for vim (default vim)
-#   TMUX_VIM_VIM_WINDOW_COUNT - how many vim panes to create
-#
-#   TMUX_VIM_VIM_WINDOW_SPLIT - if set, vim window is autosplit into panes
-#
-# If TMUX_VIM_VIM_WINDOW_COUNT is not set, then it will be set as large as
-# possible while keeping the shell pane width at least TMUX_VIM_SHELL_WIDTH
-# (default 132)
+#   TMUX_VIM_LAYOUT   - layout options (default mode:shell,orient:horiz,width:132)
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
@@ -63,8 +56,15 @@ _parse_config() {
     local key=$2
     local default=$3
 
+    # 1. add a comma at the start and end to avoid special cases
+    # 2. sed strips from the start up to our value (or leaves string intact)
+    # 3. cut strips from the first comma to the end, leaving our value (or '')
     local value=$( echo ,$cfg, | sed -E 's/^.*,'$key'://' | cut -d, -f 1 )
     echo ${value:-$default}
+}
+
+_layout_option() {
+    _parse_config "$TMUX_VIM_LAYOUT" "$@"
 }
 
 _tmux_window_id() {
@@ -174,90 +174,96 @@ _vim_start() {
 
     local vim_args=$TMUX_VIM_VIM_ARGS
 
-    local layout_mode=$( echo $TMUX_VIM_LAYOUT | cut -d: -f1 )
-    if [[ $TMUX_VIM_LAYOUT =~ ':' ]]; then
-        local layout_args=$( echo $TMUX_VIM_LAYOUT | cut -d: -f2 )
-    fi
-
-    #   +----------------+--------------+
-    #   |                #              |
-    #   |                #              |
-    #   |                #              |
-    #   +----------------+--------------+
+    #   +----------------+--------:--------+
+    #   |                #        :        |
+    #   |   shell        # vim 0  : vim 1  |
+    #   |                #        :        |
+    #   +----------------+--------:--------+
+    #    |----- sw -----| |- vw -| |- vw -|
+    #                     |----- ss ------|
+    #    |------------- ww ---------------|
     #
-    #                    |- split size -|
-    #   |- shell width -| |- vim width -|
-    #   |- window width ----------------|
-    #
-    #   ww = window width
-    #   sw = shell width
-    #   vw = vim width
-    #   vc = vim sub-window count
+    # ww = window width
+    # sw = shell width
+    # vw = vim width
+    # vc = vim sub-window count
+    # ss = split size (actual tmux param)
     #
     # ww = sw + (vc * (vw + 1))
     # sw = ww - (vc * (vw + 1))
-    # vw = (ww - sw) / vc - 1
+    # vw = ((ww - sw) / vc) - 1
     # vc = (ww - sw) / (vw + 1)
+    #
+    # ss = ww - sw - 1
+    #    = vc * (vw + 1) - 1
     #
     # Note:
     #   1 column border between shell & vim
     #   1 column border between vim sub-windows
-    #   split-size = ww - sw - 1
-    #              = vc * (vw + 1) - 1
 
-    # Something like?
-    # TMUX_VIM_LAYOUT=shell-width:80
-    # TMUX_VIM_LAYOUT=shell-height:15
-    # TMUX_VIM_LAYOUT=vim-width:132
-    # TMUX_VIM_LAYOUT=vim-width:80x2
-    # TMUX_VIM_LAYOUT=vim-width:80x*
-    # TMUX_VIM_LAYOUT=vim-height:80
-
+    local layout_mode=$( _layout_option mode shell )
     case $layout_mode in
 
-    shell-width|'')
-        local ww=$( _tmux_pane_size width )
-        local sw=${layout_args:-132}
+    shell)
 
-        local split_method='h'
-        local split_size=$[ $ww - $sw - 1 ]
+        local layout_orient=$( _layout_option orient horiz )
+
+        case $layout_orient in
+
+        horiz)
+            local ww=$( _tmux_pane_size width )
+            local sw=$( _layout_option width 132 )
+
+            local split_method='h'
+            local split_size=$[ $ww - $sw - 1 ]
+            ;;
+
+        vert)
+            local split_method='v'
+            local split_size=$( _layout_option height 15 )
+            ;;
+
+        esac
         ;;
 
-    shell-height)
-        local split_method='v'
-        local split_size=${split_args:-15}
-        ;;
+    vim)
+        local layout_orient=$( _layout_option orient horiz )
 
-    vim-width)
-        layout_args=${layout_args:-80}
-        local ww=$( _tmux_pane_size width )
-        local vc=1
-        local vw=$layout_args
-        if [[ $layout_args =~ 'x' ]]; then
-            vw=$( echo $layout_args | cut -dx -f1 )
-            vc=$( echo $layout_args | cut -dx -f2 )
-        fi
-        if [[ $vc == '*' ]]; then
-            local sw=80 #TODO: how to specify this?
-            vc=$[ ($ww - $sw) / ($vw + 1) ]
-            [[ $vc == 0 ]] && vc=1
-        fi
-        [[ -n "$TMUX_VIM_VIM_WINDOW_SPLIT" ]] && vim_args+=" -O$vc"
+        case $layout_orient in
 
-        local split_method='h'
-        local split_size=$[ $vc * ($vw + 1) - 1 ]
-        ;;
+        horiz)
 
-    vim-height)
-        local wh=$( _tmux_pane_size height )
-        local vh=${layout_args}
+            local ww=$( _tmux_pane_size width )
+            local vw=$( _layout_option width 80 )
+            local vc=$( _layout_option count 1 )
 
-        local split_method='v'
-        local split_size=$[ $wh - $vh - 1]
+            if [[ $vc == 'auto' ]]; then
+
+                local sw=$( _layout_option shell-width 132 )
+                vc=$[ ($ww - $sw) / ($vw + 1) ]
+                [[ $vc < 1 ]] && vc=1
+            fi
+
+            local as=$( _layout_option autosplit '' )
+            [[ $as > 0 ]] && vim_args+=" -O$vc"
+
+            local split_method='h'
+            local split_size=$[ $vc * ($vw + 1) - 1 ]
+            ;;
+
+        vert)
+            local wh=$( _tmux_pane_size height )
+            local vh=$( _layout_option height 24 )
+
+            local split_method='v'
+            local split_size=$[ $wh - $vh - 1]
+            ;;
+
+        esac
         ;;
 
     *)
-        _die Unknown TMUX_VIM_LAYOUT="$TMUX_VIM_LAYOUT"
+        _die Unknown TMUX_VIM_LAYOUT:mode "$layout_args"
         ;;
 
     esac
