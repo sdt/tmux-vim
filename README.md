@@ -80,11 +80,11 @@ The window layout can be specified with the `TMUX_VIM_LAYOUT` variable.
 
 ### Primary layout options
 
-#### pos
+#### vim-pos
 
 Where the **vim** pane is created relative to the shell pane.
 
-Values: `above` `below` `left` `right`
+Values: `left` `right` `top` `bottom`
 
 #### mode
 
@@ -111,7 +111,7 @@ pane.
 
 #### count
 
-Only valid for `mode:vim` and `pos:left/right`.
+Only valid for `mode:vim`.
 
 Values: _number_ or `auto`
 
@@ -122,20 +122,20 @@ sub-windows, leaving at least `reserve` columns for the shell.
 
 #### reserve
 
-Only valid for count:auto.
+Only valid for `count:auto`.
 
 Value: _number_
 
-See `count` above.
+The amount of space to reserve for the shell when using `mode:vim` with
+`count:auto`
 
 #### autosplit
 
-Only valid for `mode:vim` and `pos:left/right`.
+Only valid for `mode:vim`.
 
 Values: 1
 
-If autosplit is set, vim will be called with the -O option to automatically
-split into sub-windows.
+If autosplit is set, vim will automatically split into sub-windows.
 
 How's it work?
 --------------
@@ -162,7 +162,7 @@ the user is prompted to save, abandon or cancel. This can throw out the
 keystroke injection when trying to open multiple files.
 
 To avoid this problem, files are loaded with calls to `:badd` rather than
-`:edit`. After the last buffer is added, `:buffer` is used to switch to it. This
+`:edit`. After the last buffer is added, `:blast` is used to switch to it. This
 delays the user prompt until the very end, when the user has regained control.
 This appears to work, but there may still be issues lurking.
 
