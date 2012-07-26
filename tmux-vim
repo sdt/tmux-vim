@@ -63,6 +63,14 @@ _parse_config() {
     echo ${value:-$default}
 }
 
+_percent() {
+    local percent=$1
+    local value=$2
+
+    percent=${percent/\%/} # strip the percent sign
+    echo $[ $percent * $value / 100 ]
+}
+
 _layout_option() {
     _parse_config "$TMUX_VIM_LAYOUT" "$@"
 }
@@ -201,65 +209,78 @@ _vim_start() {
     #   1 column border between shell & vim
     #   1 column border between vim sub-windows
 
+    local layout_pos=$( _layout_option vim-pos right )
     local layout_mode=$( _layout_option mode shell )
     case $layout_mode in
 
     shell)
 
-        local layout_orient=$( _layout_option orient horiz )
-
-        case $layout_orient in
-
-        horiz)
-            local ww=$( _tmux_pane_size width )
-            local sw=$( _layout_option width 132 )
-
+        # Handle the horizontal/vertical differences
+        if [[ $layout_pos == left || $layout_pos == right ]]; then
+            local win=$( _tmux_pane_size width )
+            local shell=$( _layout_option size 132 )
             local split_method='h'
-            local split_size=$[ $ww - $sw - 1 ]
-            ;;
-
-        vert)
+        else
+            local win=$( _tmux_pane_size height )
+            local shell=$( _layout_option size 15 )
             local split_method='v'
-            local split_size=$( _layout_option height 15 )
-            ;;
+        fi
 
-        esac
+        # Convert size from percentage if necessary
+        if [[ ${shell: -1:1} == '%' ]]; then
+            shell=$( _percent $shell $win )
+        fi
+
+        # Handle the pane swapping
+        if [[ $layout_pos == left || $layout_pos == top ]]; then
+            local split_size=$[ $shell ]
+            local do_swap=1
+        else
+            local split_size=$[ $win - $shell - 1 ]
+        fi
         ;;
 
     vim)
-        local layout_orient=$( _layout_option orient horiz )
 
-        case $layout_orient in
-
-        horiz)
-
-            local ww=$( _tmux_pane_size width )
-            local vw=$( _layout_option width 80 )
-            local vc=$( _layout_option count 1 )
-
-            if [[ $vc == 'auto' ]]; then
-
-                local sw=$( _layout_option shell-width 132 )
-                vc=$[ ($ww - $sw) / ($vw + 1) ]
-                [[ $vc < 1 ]] && vc=1
-            fi
-
-            local as=$( _layout_option autosplit '' )
-            [[ $as > 0 ]] && vim_args+=" -O$vc"
-
+        # Handle the horizontal/vertical differences
+        if [[ $layout_pos == left || $layout_pos == right ]]; then
+            local win=$( _tmux_pane_size width )
+            local vim=$( _layout_option size 80 )
+            local shell=$( _layout_option reserve 132 )
             local split_method='h'
-            local split_size=$[ $vc * ($vw + 1) - 1 ]
-            ;;
-
-        vert)
-            local wh=$( _tmux_pane_size height )
-            local vh=$( _layout_option height 24 )
-
+            local window_method='O'
+        else
+            local win=$( _tmux_pane_size height )
+            local vim=$( _layout_option size 24 )
+            local shell=$( _layout_option reserve 15 )
             local split_method='v'
-            local split_size=$[ $wh - $vh - 1]
-            ;;
+            local window_method='o'
+        fi
 
-        esac
+        # Convert size from percentage if necessary
+        if [[ ${vim: -1:1} == '%' ]]; then
+            vim=$( _percent $vim $win )
+        fi
+
+        # Factor in the vim sub-window count
+        local count=$( _layout_option count 1 )
+        if [[ $count == 'auto' ]]; then
+            count=$[ ($win - $shell) / ($vim + 1) ]
+            [[ $count < 1 ]] && count=1
+        fi
+        vim=$[ ($vim + 1) * $count - 1 ]
+
+        # Handle the pane swapping
+        if [[ $layout_pos == left || $layout_pos == top ]]; then
+            local split_size=$[ $win - $vim - 1 ]
+            local do_swap=1
+        else
+            local split_size=$[ $vim ]
+        fi
+
+        # Vim sub-window autosplitting
+        local autosplit=$( _layout_option autosplit '' )
+        [[ $autosplit > 0 ]] && vim_args+=" -$window_method$count"
         ;;
 
     *)
@@ -280,9 +301,8 @@ _vim_start() {
     _vim_pane_id $(tmux lsp -a | grep ^$tmux_vim_pane: | grep -o '%[0-9]\+')
     _vim_last_dir "$PWD"
 
-    # Swap the pane if we split vertically - tmux puts the new one on the bottom,
-    # but we want it on top.
-    [[ $split_method == 'v' ]] && tmux swap-pane -D
+    # Swap the panes if necessary. tmux only does right/bottom
+    [[ $do_swap == 1 ]] && tmux swap-pane -D
 }
 
 # tmux_vim [files...]
