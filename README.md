@@ -15,7 +15,7 @@ Use **tmux-vim** just like you'd use **vim**.
 
 
 The first time you run it, a new pane will be created within your current
-**tmux** window according to `TMUX_VIM_SPLIT`, running an instance of **vim**.
+**tmux** window according to `TMUX_VIM_LAYOUT`, running an instance of **vim**.
 
 Further calls to **tmux-vim** will open the files in new buffers in the same
 **vim** session. This works in all panes within that **tmux** window, even ones
@@ -32,7 +32,7 @@ Copy **tmux-vim** to somewhere in your path.
 Alternatively, you can do something like this in your `.bashrc`:
 
     if [[ -n $TMUX ]]; then
-        vi() { ~/projectstmux-vim/tmux-vim "$@"; }
+        vi() { ~/projects/tmux-vim/tmux-vim "$@"; }
     fi
 
 Requirements
@@ -43,93 +43,107 @@ You need **tmux** version 1.6 or later.
 Configuration
 -------------
 
-By default **tmux-vim** will split the shell pane according to the size defined
-by `TMUX_VIM_SHELL_WIDTH` or `TMUX_VIM_SHELL_HEIGHT`, let the vim pane occupy
-the remaining space.
-
-In a horizontal split, if either `TMUX_VIM_VIM_WINDOW_WIDTH` or
-`TMUX_VIM_VIM_WINDOW_COUNT` is set, **tmux-vim** will calculate the width of
-the vim pane to ensure it can hold as much `TMUX_VIM_VIM_WINDOW_COUNT` as
-possible and leave shell pane at least `TMUX_VIM_SHELL_WIDTH` width. But if
-current screen can only hold one window size of vim, then `TMUX_VIM_SHELL_WIDTH`
-will be ignored.
-
-
 This behaviour can be adjusted with the following environment variables.
 
 ### TMUX_VIM_CONFIG
 
 Path to configuration file.
 
-Optional, default is `~/.tmux-vim.conf`.
+Default: ~/.tmux-vim.conf
 
-The remaining variables can be set in this config file.
-
-### TMUX_VIM_SPLIT
-
-Value: [ h | v ]
-
-Optional, default is horizontal.
-
-Define how **tmux-vim** splits panes.
-
-* **h** = Horizontally, vim to the right.
-* **v** = Vertically, vim on top.
-
-### TMUX_VIM_VIM_ARGS
-
-Optional.
-
-Command-line arguments to pass through to **vim**.
+The remaining variables can be set via this config file.
 
 ### TMUX_VIM_VIM_BIN
 
-Optional, default is 'vim'.
+The binary executable used to run **vim**.
 
-The binary executable used to run **vim**. Useful if you're using
-[MacVim](http://code.google.com/p/macvim/) and have another binary like `mvim`
-which you'd like to use.
+Default: vim
 
-### TMUX_VIM_VIM_WIDTH
+Useful if you're using [MacVim](http://code.google.com/p/macvim/) and have
+another binary like `mvim` which you'd like to use.
 
-Optional, default is 80.
+### TMUX_VIM_VIM_ARGS
 
-If `TMUX_VIM_SPLIT` is 'HORIZONTAL', then this variable defines the minimum
-width of the vim pane.
+Command-line arguments to pass through to **vim**.
 
-### TMUX_VIM_VIM_WINDOW_WIDTH
+Default: (empty)
 
-Optional, default is the same as `TMUV_VIM_VIM_WIDTH`.
+Note that these will only be used when the **vim** instance is created.
 
-Width of a single **vim** window in columns.
+### TMUX_VIM_LAYOUT
 
-### TMUX_VIM_VIM_WINDOW_COUNT
+Layout specification. See *Layout* below.
 
-Optional.
+Default: mode:shell,vim-pos:right,width:132
 
-Specify a fixed number of **vim** windows with this.
+Layout
+------
 
-### TMUX_VIM_VIM_WINDOW_SPLIT
+The window layout can be configured with the `TMUX_VIM_LAYOUT` variable.
 
-If this variable is set, then the vim will be splitted according to the
-calculation of `$tmux_vim_window_count`.
+When the **vim** window is spawned, the current **tmux** pane is split into two.
+**tmux-vim** needs to decide which way to split it, and where to put the split.
 
-### TMUX_VIM_SHELL_WIDTH
+### Primary layout options
 
-Optional, default is 132.
+#### vim-pos
 
-If `TMUX_VIM_SPLIT` is **H**orizontal, then this variable defines the width of the
-shell pane.
+Where the **vim** pane is created relative to the shell pane.
 
-On narrow displays, one **vim** pane will always be created, even if this means
-we leave less that `TMUX_VIM_SHELL_WIDTH` columns for the shell.
+Values: `left` `right` `top` `bottom`
+Default: `right`
 
-### TMUX_VIM_SHELL_HEIGHT
+#### mode
 
-Optional, default is 15.
+How the pane sizes is computed.
 
-If `TMUX_VIM_SPLIT` is **V**ertical, then this variable defines the height of the
-shell pane.
+Values: `vim` `shell`
+Default: `shell`
+
+When the value is `vim` the **vim** pane size is calculated, and the shell pane
+is allocated the remaining space.
+
+Conversely, when the value is `shell`, the shell pane size is calculated, and
+the **vim** pane gets the remainder.
+
+#### size
+
+What size to make the chosen pane.
+
+Values: _number_ (eg. 132) or _percentage_ (eg. 40%)
+
+You can specify an exact row or column size, or a percentage of the original
+pane.
+
+The defaults depend upon the mode. In `vim` mode, 80x24, in `shell` 132x15.
+
+### Extra layout options for vim mode
+
+#### count
+
+Values: _number_ or `auto`
+Default: 1
+
+Will create `size` * `count` vim sub-windows.
+
+If the value is `auto`, the vim pane will fill the available width with
+sub-windows, leaving at least `reserve` columns for the shell.
+
+#### reserve
+
+Only valid for `count:auto`.
+
+Value: _number_
+
+The amount of space to reserve for the shell when using `mode:vim` with
+`count:auto`
+
+#### autosplit
+
+Values: 0 1
+Default: 0
+
+If `autosplit` is 1, **vim** will automatically split into sub-windows.
 
 How's it work?
 --------------
@@ -141,8 +155,9 @@ saved in the tmux environment. This happens on demand - panes are created only
 when needed.
 
 The **vim** instance is controlled by injecting keystrokes with
-`tmux send-keys`. To load a file, **tmux-vim** sends `:edit filename<cr>` to the
-**vim** instance.
+`tmux send-keys`. To load files, **tmux-vim** sends `:badd filename<cr>` to the
+**vim** instance for each file, and then `:blast<cr>` to select the last file
+added.
 
 Finally, `tmux select-pane` transfers control over to the **vim** pane.
 
@@ -156,13 +171,19 @@ the user is prompted to save, abandon or cancel. This can throw out the
 keystroke injection when trying to open multiple files.
 
 To avoid this problem, files are loaded with calls to `:badd` rather than
-`:edit`. After the last buffer is added, `:buffer` is used to switch to it. This
+`:edit`. After the last buffer is added, `:blast` is used to switch to it. This
 delays the user prompt until the very end, when the user has regained control.
 This appears to work, but there may still be issues lurking.
 
 When the **vim** pane is created, the current directory is saved in the **tmux**
 environment. The directory is used when computing relative paths. If the user
 manually changes the vim working directory, the relative paths will break.
+
+Contact
+-------
+
+Bug reports, suggestions, feature requests and patches are most welcome at
+[the tmux-vim git repo](https://github.com/sdt/tmux-vim).
 
 Acknowledgements
 ----------------
