@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#------------------------------------------------------------------------------
+  #------------------------------------------------------------------------------
 # tmux-vim
 #
 # Persistent vim panes within tmux.
@@ -323,8 +323,8 @@ tmux_vim() {
         # This obviates any relative path computations.
         [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd "$PWD"
 
-        # Rather than :edit each file in turn, :badd each file into a new
-        # buffer, and then finally switch to the last one with :buffer.
+        # Rather than :edit each file in turn, use :badd for all but the last
+        # file, and then use :edit on that.
         # This is to handle the situation where the current buffer is unsaved,
         # and an :edit command will cause vim to prompt the user to save,
         # abandon or cancel.
@@ -332,13 +332,14 @@ tmux_vim() {
         # cancel works, but yes/no end up with only the first file opened.
         # Errant escape keys cause the whole open to just silently fail.
         # This approach pushes the user interaction right to the end.
-        for file in "$@"; do
-            _vim_op badd "$file"   # load a buffer for each file
+        while [[ $# -gt 1 ]]; do
+            _vim_op badd "$1"
+            shift
         done
 
-        [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd -
+        _vim_op edit "$1"
 
-        _vim_op blast              # switch to the final file
+        [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd -
     fi
 
     tmux select-pane -t $( _vim_pane_id )
