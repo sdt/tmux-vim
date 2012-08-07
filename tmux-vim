@@ -127,6 +127,11 @@ _vim_send_keys() {
     tmux send-keys -t $( _vim_pane_id ) "$@"
 }
 
+_tmux_is_running() {
+    local pane_id=$( _vim_pane_id )
+    [[ -n $pane_id ]] && tmux lsp -F '#{pane_id}' | grep -q ^$pane_id$
+}
+
 # _tmux_version
 # - return the current tmux version
 # - only works for tmux >= 1.5 (but we already checked that)
@@ -167,15 +172,13 @@ _vim_op() {
 # - spawns a new vim instance if necessary
 # - returns 1 if vim is already running, 0 if a new instance was started
 _vim_start() {
+    if _tmux_is_running; then
+        # tmux_vim already exists - try to select that pane
+        tmux select-pane -t $( _vim_pane_id ) && return 1
 
-    # If the vim_pane has been created, try to select it.
-    local vim_pane=$( _vim_pane_id )
-    if [[ -n $vim_pane ]] && tmux select-pane -t $vim_pane 2> /dev/null; then
-        # vim pane still exists
-        return 1
+        # If we get here, that pane no longer exists, so fall thru
+        # (shouldn't happen)
     fi
-
-    # If we get here, the vim pane does not exist, so create a new one
 
     local vim_args=$TMUX_VIM_VIM_ARGS
 
