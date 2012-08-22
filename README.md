@@ -53,6 +53,16 @@ Default: ~/.tmux-vim.conf
 
 The remaining variables can be set via this config file.
 
+### TMUX_VIM_TMUX_BIN
+
+The binary executable (and arguments) used to run **tmux**.
+
+Default: tmux
+
+To test tmux-vim against a different tmux binary that your usual one, first
+start the tmux session with `$path_to_/tmux -L testing`, and then set
+`TMUX_VIM_TMUX_BIN=$path_to_/tmux -L testing`.
+
 ### TMUX_VIM_VIM_BIN
 
 The binary executable used to run **vim**.

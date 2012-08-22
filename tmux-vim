@@ -1,6 +1,6 @@
 #!/bin/bash
 
-  #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # tmux-vim
 #
 # Persistent vim panes within tmux.
@@ -14,6 +14,7 @@
 #   TMUX_VIM_CONFIG   - path to config file (default ~/.tmux-vim.conf)
 #   TMUX_VIM_VIM_ARGS - command-line args to pass to vim (default none)
 #   TMUX_VIM_VIM_BIN  - executable to use for vim (default vim)
+#   TMUX_VIM_TMUX_BIN - executable to use for tmux (default tmux)
 #   TMUX_VIM_LAYOUT   - layout options (default mode:shell,orient:horiz,width:132)
 #------------------------------------------------------------------------------
 
@@ -42,6 +43,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #------------------------------------------------------------------------------
+
+# Set this once and for all - it won't change
+tmux=${TMUX_VIM_TMUX_BIN:-tmux}
 
 _die() {
     echo "$@" 2>&1
@@ -76,7 +80,7 @@ _layout_option() {
 }
 
 _tmux_window_id() {
-    tmux lsp -a -F '#{pane_id}=#{window_index}' |\
+    $tmux lsp -a -F '#{pane_id}=#{window_index}' |\
         grep ^$TMUX_PANE= | cut -d= -f2
 }
 
@@ -85,7 +89,8 @@ _tmux_window_id() {
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
 _tmux_store() {
-    tmux set-environment "${1}_$( _tmux_window_id )" "$2"
+    local key="${1}_$( _tmux_window_id )"
+    $tmux set-environment $key "$2"
 }
 
 # _tmux_fetch key
@@ -93,7 +98,8 @@ _tmux_store() {
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
 _tmux_fetch() {
-    tmux show-environment | grep "^${1}_$( _tmux_window_id )=" | cut -d= -f2-
+    local key="${1}_$( _tmux_window_id )"
+    $tmux show-environment | grep "^$key=" | cut -d= -f2-
 }
 
 _tmux_fetch_or_store() {
@@ -107,7 +113,7 @@ _tmux_fetch_or_store() {
 # _tmux_pane_size width|height
 # - gets height or width of current pane
 _tmux_pane_size() {
-    tmux lsp -F "#{pane_id}=#{pane_$1}" | grep ^$TMUX_PANE= | cut -d= -f2
+    $tmux lsp -F "#{pane_id}=#{pane_$1}" | grep ^$TMUX_PANE= | cut -d= -f2
 }
 
 # _vim_pane_id [id]
@@ -124,19 +130,19 @@ _vim_last_dir() {
 # - sends keystrokes to the vim instance created by tmux_vim
 # - keystroke syntax is the same as tmux send-keys
 _vim_send_keys() {
-    tmux send-keys -t $( _vim_pane_id ) "$@"
+    $tmux send-keys -t $( _vim_pane_id ) "$@"
 }
 
 _tmux_is_running() {
     local pane_id=$( _vim_pane_id )
-    [[ -n $pane_id ]] && tmux lsp -F '#{pane_id}' | grep -q ^$pane_id$
+    [[ -n $pane_id ]] && $tmux lsp -F '#{pane_id}' | grep -q ^$pane_id$
 }
 
 # _tmux_version
 # - return the current tmux version
 # - only works for tmux >= 1.5 (but we already checked that)
 _tmux_version() {
-    tmux -V | cut -d' ' -f2
+    $tmux -V | cut -d' ' -f2
 }
 
 # _pre_flight_checks
@@ -148,7 +154,7 @@ _pre_flight_checks() {
     fi
 
     # Check that tmux supports the -V command (>= v1.5)
-    if ! tmux -V 1>/dev/null 2>/dev/null ; then
+    if ! $tmux -V 1>/dev/null 2>/dev/null ; then
         _die tmux 1.6 or greater is required
     fi
 
@@ -174,7 +180,7 @@ _vim_op() {
 _vim_start() {
     if _tmux_is_running; then
         # tmux_vim already exists - try to select that pane
-        tmux select-pane -t $( _vim_pane_id ) && return 1
+        $tmux select-pane -t $( _vim_pane_id ) && return 1
 
         # If we get here, that pane no longer exists, so fall thru
         # (shouldn't happen)
@@ -298,17 +304,17 @@ _vim_start() {
     fi
 
     # Split a new pane, start vim in it, and record the pane index
-    local tmux_vim_pane=$(tmux split-window -P -$split_method -l $split_size \
-                        "exec $vim_bin $vim_args $vim_files")
+    local tmux_vim_pane=$( $tmux split-window -P -$split_method -l $split_size \
+                        "exec $vim_bin $vim_args $vim_files" )
 
     # Now convert the pane index into a global persistent id
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
     # ^^^^^ $tmux_vim_pane              pane_id  ^^
-    _vim_pane_id $(tmux lsp -a | grep ^$tmux_vim_pane: | grep -o '%[0-9]\+')
+    _vim_pane_id $( $tmux lsp -a | grep ^$tmux_vim_pane: | grep -o '%[0-9]\+' )
     _vim_last_dir "$PWD"
 
     # Swap the panes if necessary. tmux only does right/bottom
-    [[ $do_swap == 1 ]] && tmux swap-pane -D
+    [[ $do_swap == 1 ]] && $tmux swap-pane -D
 
     return 0
 }
@@ -354,7 +360,7 @@ tmux_vim() {
 
     fi
 
-    tmux select-pane -t $( _vim_pane_id )
+    $tmux select-pane -t $( _vim_pane_id )
 }
 
 tmux_vim "$@"
