@@ -82,29 +82,16 @@ _layout_option() {
     _parse_config "$TMUX_VIM_LAYOUT" "$@"
 }
 
-# _tmux_store key value
-# - stores key/value pair in tmux environment
+# _tmux_fetch_or_store key [value]
 # - appends window id to key so this is a per-window setting
-# - much thanks to Romain Francoise for help with this!
-_tmux_store() {
-    local key="${1}_$tmux_window_id"
-    $tmux set-environment $key "$2"
-}
-
-# _tmux_fetch key
-# - retrieves value from tmux environment
-# - appends window id to key so this is a per-window setting
-# - much thanks to Romain Francoise for help with this!
-_tmux_fetch() {
-    local key="${1}_$tmux_window_id"
-    $tmux show-environment | grep "^$key=" | cut -d= -f2-
-}
-
+# - if value supplied, stores key=value, otherwise retrieves it
+# - many thanks to Romain Francoise for help with this!
 _tmux_fetch_or_store() {
+    local key="${1}_$tmux_window_id"
     if [[ $# -gt 1 ]]; then
-        _tmux_store "$@"
+        $tmux set-environment $key "$2"
     else
-        _tmux_fetch "$@"
+        $tmux show-environment | grep "^$key=" | cut -d= -f2-
     fi
 }
 
