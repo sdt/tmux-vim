@@ -44,8 +44,11 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #------------------------------------------------------------------------------
 
-# Set this once and for all - it won't change
+# Set these once and for all - they won't change
+
 tmux=${TMUX_VIM_TMUX_BIN:-tmux}
+
+tmux_window_id=$( $tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2 )
 
 _die() {
     echo "$@" 2>&1
@@ -79,17 +82,12 @@ _layout_option() {
     _parse_config "$TMUX_VIM_LAYOUT" "$@"
 }
 
-_tmux_window_id() {
-    $tmux lsp -a -F '#{pane_id}=#{window_index}' |\
-        grep ^$TMUX_PANE= | cut -d= -f2
-}
-
 # _tmux_store key value
 # - stores key/value pair in tmux environment
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
 _tmux_store() {
-    local key="${1}_$( _tmux_window_id )"
+    local key="${1}_$tmux_window_id"
     $tmux set-environment $key "$2"
 }
 
@@ -98,7 +96,7 @@ _tmux_store() {
 # - appends window id to key so this is a per-window setting
 # - much thanks to Romain Francoise for help with this!
 _tmux_fetch() {
-    local key="${1}_$( _tmux_window_id )"
+    local key="${1}_$tmux_window_id"
     $tmux show-environment | grep "^$key=" | cut -d= -f2-
 }
 
