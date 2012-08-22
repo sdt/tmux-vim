@@ -48,7 +48,8 @@
 
 tmux=${TMUX_VIM_TMUX_BIN:-tmux}
 
-tmux_window_id=$( $tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2 )
+tmux_window_id=$( $tmux lsp -a -F '#{pane_id}=#{window_index}' |\
+                    grep ^$TMUX_PANE= | cut -d= -f2 )
 
 _die() {
     echo "$@" 1>&2
@@ -323,37 +324,33 @@ tmux_vim() {
     [[ -f "$rcfile" ]] && source "$rcfile"
 
     _pre_flight_checks || exit 1
-    if ! _vim_start "$@"; then
 
-        # vim was already running, send the new files
-        if [[ $# -gt 0 ]]; then
+    if ( ! _vim_start "$@" ) && [[ $# -gt 0 ]]; then
 
-            _vim_send_keys escape  # make sure we're in command mode
+        _vim_send_keys escape  # make sure we're in command mode
 
-            # If we are now in a different directory than $TDIR, we want to make
-            # vim switch to this directory temporarily before opening the files.
-            # This obviates any relative path computations.
-            [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd "$PWD"
+        # If we are now in a different directory than $TDIR, we want to make
+        # vim switch to this directory temporarily before opening the files.
+        # This obviates any relative path computations.
+        [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd "$PWD"
 
-            # Rather than :edit each file in turn, use :badd for all but the last
-            # file, and then use :edit on that.
-            # This is to handle the situation where the current buffer is unsaved,
-            # and an :edit command will cause vim to prompt the user to save,
-            # abandon or cancel.
-            # If we just :edit each file, things just don't work out naturally;
-            # cancel works, but yes/no end up with only the first file opened.
-            # Errant escape keys cause the whole open to just silently fail.
-            # This approach pushes the user interaction right to the end.
-            while [[ $# -gt 1 ]]; do
-                _vim_op badd "$1"
-                shift
-            done
+        # Rather than :edit each file in turn, use :badd for all but the last
+        # file, and then use :edit on that.
+        # This is to handle the situation where the current buffer is unsaved,
+        # and an :edit command will cause vim to prompt the user to save,
+        # abandon or cancel.
+        # If we just :edit each file, things just don't work out naturally;
+        # cancel works, but yes/no end up with only the first file opened.
+        # Errant escape keys cause the whole open to just silently fail.
+        # This approach pushes the user interaction right to the end.
+        while [[ $# -gt 1 ]]; do
+            _vim_op badd "$1"
+            shift
+        done
 
-            _vim_op edit "$1"
+        _vim_op edit "$1"
 
-            [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd -
-        fi
-
+        [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd -
     fi
 
     $tmux select-pane -t $( _vim_pane_id )
