@@ -151,12 +151,23 @@ _pre_flight_checks() {
     return 0
 }
 
+# _munge_filename <string>
+# - workaround for missing -l flag to tmux send-keys in v1.5
+# - converts filename to f i l e n a m e (so that files that look like tmux key
+#   names are not interpreted as key codes)
+# - spaces in the filename are converted to "\ space"
+_munge_filename() {
+    # Note that we double-escape the backslashes, once for sed, again for
+    # passing it out to tmux.
+    echo $@ | sed -e 's/./& /g' | sed -e "s/  / \\\\ space/g"
+}
+
 # _vim_op <op> <file>
 # - does _vim_send_keys :$op space $file
 # - escapes spaces correctly in $file
 _vim_op() {
     # Backslash escape all spaces in the file name
-    _vim_send_keys :$1 space "${2// /\\ }" enter
+    _vim_send_keys :$1 space $( _munge_filename "$2" ) enter
 }
 
 # _vim_start <files>
