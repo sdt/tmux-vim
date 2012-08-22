@@ -51,7 +51,7 @@ tmux=${TMUX_VIM_TMUX_BIN:-tmux}
 tmux_window_id=$( $tmux lsp -a -F '#{pane_id}=#{window_index}' | grep ^$TMUX_PANE= | cut -d= -f2 )
 
 _die() {
-    echo "$@" 2>&1
+    echo "$@" 1>&2
     exit 1
 }
 
