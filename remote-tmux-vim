@@ -2,11 +2,24 @@
 
 # Pre-preparation script which sets up the appropriate local<->remote hoohar
 # and then calls tmux-vim. Still a WIP.
+#
+# Settings:
+#   TMUX_SERVER_USER - username on tmux server machine
+#   TMUX_SERVER_PATH - path to tmux on tmux server
 
-# These need to be set by the user, maybe in a REMOTE_TMUX_VIM_CONFIG file.
-export TMUX_SERVER_HOST=stephent@192.168.1.228
-export TMUX_LOCAL_HOST=sdt@192.168.1.175
-export TMUX_SERVER_PATH=/usr/local/bin/tmux
+# TODO: come up with some unambiguous terms for local/remote hosts
+# TODO: consistent naming for the environment variables
+
+export TMUX_SERVER_PATH=${TMUX_SERVER_PATH:-tmux}
+
+# Determine the host the tmux server is running on.
+TMUX_SERVER_IP=$( echo $SSH_CONNECTION | cut -d' ' -f1 )
+export TMUX_SERVER_HOST=${TMUX_SERVER_USER:-$USER}@$TMUX_SERVER_IP
+
+# Determine the host the we've ssh'ed into.
+TMUX_LOCAL_USER=$USER
+TMUX_LOCAL_IP=$( echo $SSH_CONNECTION | cut -d' ' -f3 )
+export TMUX_LOCAL_HOST=$TMUX_LOCAL_USER@$TMUX_LOCAL_IP
 
 # This needs to be set to fool the tmux-vim pre-flight checks
 export TMUX=1
