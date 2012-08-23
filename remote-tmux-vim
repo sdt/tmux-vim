@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Pre-preparation script which sets up the appropriate local<->remote hoohar
+# and then calls tmux-vim. Still a WIP.
+
+# These need to be set by the user, maybe in a REMOTE_TMUX_VIM_CONFIG file.
+export TMUX_SERVER_HOST=stephent@192.168.1.228
+export TMUX_LOCAL_HOST=sdt@192.168.1.175
+export TMUX_SERVER_PATH=/usr/local/bin/tmux
+
+# This needs to be set to fool the tmux-vim pre-flight checks
+export TMUX=1
+
+# We need to quote the tmux args before passing them through to ssh, so use
+# this function rather than the bare ssh invocation.
+_tmux_remote() {
+    ssh $TMUX_SERVER_HOST $TMUX_SERVER_PATH $( printf '%q ' "$@" )
+}
+export -f _tmux_remote
+
+# ... and tell tmux-vim to use that function as our tmux binary
+export TMUX_VIM_TMUX_BIN=_tmux_remote
+
+# The vim command doesn't need the escaping, but it does need to change to
+# our cwd beforehand.
+export TMUX_VIM_VIM_BIN="ssh -t $TMUX_LOCAL_HOST cd $PWD \\; vim"
+
+# TMUX_PANE isn't set on the remote host, but we can work it out.
+export TMUX_PANE=$( \
+    _tmux_remote lsp -F '#{pane_active}:#{pane_id}' | grep ^1: | cut -d: -f2 )
+
+# Now call the original tmux-vim script.
+tmux-vim "$@"
