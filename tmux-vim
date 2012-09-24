@@ -108,8 +108,12 @@ _vim_pane_id() {
     _tmux_fetch_or_store tmux_vim_pane "$@"
 }
 
-_vim_last_dir() {
-    _tmux_fetch_or_store tmux_vim_last_dir "$@"
+_vim_cwd() {
+    local vim_pane_id=$( _vim_pane_id )
+    local vim_pid=$( tmux lsp -F '#{pane_id}=#{pane_pid}' |\
+                     grep ^$vim_pane_id= | cut -d= -f2 )
+
+    lsof -p $vim_pid -a -d cwd -Fn | grep ^n | cut -c 2-
 }
 
 # _vim_send_keys [keystrokes...]
@@ -308,7 +312,6 @@ _vim_start() {
     # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
     # ^^^^^ $tmux_vim_pane              pane_id  ^^
     _vim_pane_id $( $tmux lsp -a | grep ^$tmux_vim_pane: | grep -o '%[0-9]\+' )
-    _vim_last_dir "$PWD"
 
     # Swap the panes if necessary. tmux only does right/bottom
     [[ $do_swap == 1 ]] && $tmux swap-pane -D
@@ -332,7 +335,8 @@ tmux_vim() {
         # If we are now in a different directory than $TDIR, we want to make
         # vim switch to this directory temporarily before opening the files.
         # This obviates any relative path computations.
-        [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd "$PWD"
+        local vim_cwd=$( _vim_cwd )
+        [[ "$PWD" != "$vim_cwd" ]] && _vim_op cd "$PWD"
 
         # Rather than :edit each file in turn, use :badd for all but the last
         # file, and then use :edit on that.
@@ -350,7 +354,7 @@ tmux_vim() {
 
         _vim_op edit "$1"
 
-        [[ "$PWD" != "$( _vim_last_dir )" ]] && _vim_op cd -
+        [[ "$PWD" != "$vim_cwd" ]] && _vim_op cd -
     fi
 
     $tmux select-pane -t $( _vim_pane_id )
