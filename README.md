@@ -180,14 +180,10 @@ By default, **vim** won't abandon an unsaved file to open another one, instead
 the user is prompted to save, abandon or cancel. This can throw out the
 keystroke injection when trying to open multiple files.
 
-To avoid this problem, files are loaded with calls to `:badd` rather than
-`:edit`. After the last buffer is added, `:blast` is used to switch to it. This
-delays the user prompt until the very end, when the user has regained control.
-This appears to work, but there may still be issues lurking.
-
-When the **vim** pane is created, the current directory is saved in the **tmux**
-environment. The directory is used when computing relative paths. If the user
-manually changes the vim working directory, the relative paths will break.
+To avoid this problem, all but the last file is loaded with `:badd`, using
+`:edit` only for the last file. This delays the user prompt until the very end,
+when the user has regained control.  This appears to work, but there may still
+be issues lurking.
 
 Contact
 -------
