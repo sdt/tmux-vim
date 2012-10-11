@@ -90,8 +90,11 @@ def tmux_pane_size(split):
 	))
 
 def select_pane(pane_id):
+	if cmd_query([ cfg['tmux'], 'lsp', '-F', '#{pane_id}=1' ],
+				  make_pattern(pane_id)) == None:
+		return False
 	cmd = [ cfg['tmux'], 'select-pane', '-t', str(pane_id) ]
-	return subprocess.call(cmd, stderr=open(os.devnull)) == 0
+	return subprocess.call(cmd) == 0
 
 def layout_option(key, default):
 	return cfg['layout'].get(key, default)
