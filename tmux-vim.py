@@ -191,11 +191,25 @@ def reuse_vim_pane(pane_id, filenames):
 		keys += vim_command('edit', filenames[-1], vim_cwd)
 		tmux_exec([ 'send-keys', '-t', pane_id ] + keys)
 
+def pre_flight_checks():
+	# Check that tmux is running
+	if not 'TMUX' in os.environ:
+		die('tmux session not detected')
+
+    # Check that tmux supports the -V command (>= v1.5)
+	if subprocess.call([ cfg['tmux'], '-V' ], stdout=open(os.devnull), stderr=open(os.devnull)) != 0:
+		die('tmux 1.6 or greater is required')
+
+    # Check tmux is v1.6 or greater
+	if float(cmd_query([ cfg['tmux'], '-V' ], 'tmux\s+(\S+)')) < 1.6:
+		die('tmux 1.6 or greater is required')
+
 #------------------------------------------------------------------------------
 
 def main(filenames):
 	global cfg
 	cfg = load_config({ 'tmux': 'tmux', 'vim': 'vim' })
+	pre_flight_checks()
 	window_key = 'tmux_vim_pane_' + tmux_window_id()
 	vim_pane_id = tmux_fetch_env(window_key)
 	if vim_pane_id is None or not select_pane(vim_pane_id):
