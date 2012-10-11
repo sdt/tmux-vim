@@ -328,6 +328,8 @@ tmux_vim() {
 
     _pre_flight_checks || exit 1
 
+    file=$(realpath "$1")
+
     if ( ! _vim_start "$@" ) && [[ $# -gt 0 ]]; then
 
         _vim_send_keys escape  # make sure we're in command mode
@@ -348,11 +350,11 @@ tmux_vim() {
         # Errant escape keys cause the whole open to just silently fail.
         # This approach pushes the user interaction right to the end.
         while [[ $# -gt 1 ]]; do
-            _vim_op badd "$1"
+            _vim_op badd "$file"
             shift
         done
 
-        _vim_op edit "$1"
+        _vim_op edit "$file"
 
         [[ "$PWD" != "$vim_cwd" ]] && _vim_op cd -
     fi
