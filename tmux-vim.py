@@ -80,6 +80,12 @@ def split_method(vim_pos):
 	else:
 		return 'v'
 
+def eval_percent(pc, val):
+	if pc[-1] == '%':
+		return int(pc[:-1]) * val / 100
+	else:
+		return int(pc)
+
 def compute_layout():
 	vim_pos = layout_option('vim-pos', 'right')
 	split = split_method(vim_pos)
@@ -90,47 +96,33 @@ def compute_layout():
 
 	if mode == 'shell':
 
-		# Handle the horizontal/vertical differences
-		if split == 'h':
-			shell = int(layout_option('size', 132))
-		else:
-			shell = int(layout_option('size', 15))
-
-		# Handle pane swapping
-		if vim_pos == 'left' or vim_pos == 'top':
-			split_size = shell
-		else:
-			split_size = pane - shell - 1
+		default_shell = { 'h': 132, 'v': 15  }
+		shell_size = layout_option('size', default_shell[split])
+		split_size = eval_percent(shell_size, pane)
 
 	elif mode == 'vim':
 
-		# Handle the horizontal/vertical differences
-		if split == 'h':
-			vim = int(layout_option('size', 80))
-			shell = int(layout_option('reserve', 132))
-			window_method = 'O'
-		else:
-			vim = int(layout_option('size', 24))
-			shell = int(layout_option('reserve', 15))
-			window_method = 'o'
+		default_vim = { 'h':  80, 'v': 24  }
+		vim = eval_percent(layout_option('size', default_vim[split]), pane)
 
 		# Factor in the vim sub-window count
 		count = layout_option('count', 1)
 		if count == 'auto':
+			reserve = layout_option('reserve', default_shell[split])
+			shell = eval_percent(reserve, pane)
 			count = max(1, (pane - shell) / (vim + 1))
 		else:
 			count = int(count)
-		vim = (vim + 1) * count - 1
 
-		# Handle the pane swapping
-		if vim_pos == 'left' or vim_pos == 'top':
-			split_size = pane - vim - 1
-		else:
-			split_size = vim
+		split_size = (vim + 1) * count - 1
 
 		autosplit = bool(layout_option('autosplit', False))
 		if autosplit:
-			vim_args += "-%s%d" % (window_method, count)
+			window_method = { 'h': 'O', 'v': 'o' }
+			vim_args += "-%s%d" % (window_method[split], count)
+
+	if swap_panes:
+		split_size = pane - split_size - 1
 
 	return {
 		'split_method': '-' + split,
