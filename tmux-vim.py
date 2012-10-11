@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import ConfigParser;
 import os;
 import pipes;
 import re;
@@ -8,13 +9,31 @@ import sys;
 
 #------------------------------------------------------------------------------
 
-cfg = {
-	'layout': 	os.environ.get('TMUX_VIM_LAYOUT', 		''),
-	'tmux': 	os.environ.get('TMUX_VIM_TMUX_BIN', 	'tmux'),
-	'vim':  	os.environ.get('TMUX_VIM_VIM_BIN',  	'vim')
-}
+cfg = {}
 
 #------------------------------------------------------------------------------
+
+def die(msg):
+	print >> sys.stderr, msg
+	sys.exit(1)
+
+def load_section(parser, section):
+	if not parser.has_section(section):
+		return { }
+	return dict(parser.items(section))
+
+def load_config(defaults):
+	parser = ConfigParser.SafeConfigParser()
+	inifile = os.environ.get('TMUX_VIM_INI',
+							 os.path.expanduser('~/.tmux-vim.ini'))
+	try:
+		parser.read(inifile)
+	except ConfigParser.Error as e:
+		die('Reading %s:\n%s' % (inifile, e))
+	cfg = defaults
+	cfg.update(load_section(parser, 'general'))
+	cfg['layout'] = load_section(parser, 'layout')
+	return cfg
 
 def tmux_exec(args):
 	subprocess.check_call([cfg['tmux']] + args)
@@ -67,12 +86,7 @@ def select_pane(pane_id):
 	return subprocess.call(cmd, stderr=open(os.devnull)) == 0
 
 def layout_option(key, default):
-	# key=value,key=value,key=value
-	pattern = '(?:^|,)' + re.escape(key) + ':(.*?)(?:,|$)'
-	match = re.search(pattern, cfg['layout'])
-	if match is None:
-		return default
-	return match.group(1)
+	return cfg['layout'].get(key, default)
 
 def split_method(vim_pos):
 	if vim_pos == 'left' or vim_pos == 'right':
@@ -81,7 +95,7 @@ def split_method(vim_pos):
 		return 'v'
 
 def eval_percent(pc, val):
-	if pc[-1] == '%':
+	if str(pc)[-1] == '%':
 		return int(pc[:-1]) * val / 100
 	else:
 		return int(pc)
@@ -94,15 +108,16 @@ def compute_layout():
 	swap_panes = (vim_pos == 'left' or vim_pos == 'top')
 	vim_args = ' '
 
+	default_shell = { 'h': 132, 'v': 15  }
+	default_vim   = { 'h':  80, 'v': 24  }
+
 	if mode == 'shell':
 
-		default_shell = { 'h': 132, 'v': 15  }
 		shell_size = layout_option('size', default_shell[split])
 		split_size = eval_percent(shell_size, pane)
 
 	elif mode == 'vim':
 
-		default_vim = { 'h':  80, 'v': 24  }
 		vim = eval_percent(layout_option('size', default_vim[split]), pane)
 
 		# Factor in the vim sub-window count
@@ -172,6 +187,8 @@ def reuse_vim_pane(pane_id, filenames):
 #------------------------------------------------------------------------------
 
 def main(filenames):
+	global cfg
+	cfg = load_config({ 'tmux': 'tmux', 'vim': 'vim' })
 	window_key = 'tmux_vim_pane_' + tmux_window_id()
 	vim_pane_id = tmux_fetch_env(window_key)
 	if vim_pane_id is None or not select_pane(vim_pane_id):
