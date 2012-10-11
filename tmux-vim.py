@@ -38,8 +38,16 @@ def load_config(defaults):
 def tmux_exec(args):
 	subprocess.check_call([cfg['tmux']] + args)
 
+def check_output(command):
+	process = subprocess.Popen(command, stdout=subprocess.PIPE)
+	output, unused_err = process.communicate()
+	retcode = process.poll()
+	if retcode:
+		raise subprocess.CalledProcessError(retcode, command, output=output)
+	return output
+
 def cmd_query(command, pattern):
-	output = subprocess.check_output(command)
+	output = check_output(command)
 	regex = re.compile(pattern, re.MULTILINE)
 	match = regex.search(output)
 	if match is None:
@@ -152,8 +160,7 @@ def spawn_vim_pane(filenames):
 	vim_files = ' '.join(map(pipes.quote, filenames))
 	vim_cmd = ' '.join(['exec', cfg['vim'], opt['vim_args'], vim_files])
 	tmux_cmd = [ cfg['tmux'], 'split-window', '-P', opt['split_method'], '-l', opt['split_size'], vim_cmd ]
-	print tmux_cmd
-	pane_path = subprocess.check_output(tmux_cmd).rstrip('\n\r')
+	pane_path = check_output(tmux_cmd).rstrip('\n\r')
 
 	# 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
 	# ^^^^^ pane_path                   pane_id  ^^
