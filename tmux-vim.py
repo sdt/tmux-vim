@@ -16,14 +16,6 @@ cfg = {
 
 #------------------------------------------------------------------------------
 
-def layout_option(key, default):
-	# key=value,key=value,key=value
-	pattern = '(?:^|,)' + re.escape(key) + ':(.*?)(?:,|$)'
-	match = re.search(pattern, cfg['layout'])
-	if match is None:
-		return default
-	return match.group(1)
-
 def tmux_exec(args):
 	subprocess.check_call([cfg['tmux']] + args)
 
@@ -60,20 +52,110 @@ def get_vim_cwd(vim_pane_id):
 		'^n(.*)$'
 	)
 
+def tmux_pane_size(split):
+	if split == 'h':
+		dimension = 'width'
+	else:
+		dimension = 'height'
+	return int(cmd_query(
+		[ cfg['tmux'], 'lsp', '-F', '#{pane_id}=#{pane_%s}' % (dimension) ],
+		make_pattern(os.environ['TMUX_PANE'])
+	))
+
 def select_pane(pane_id):
 	cmd = [ cfg['tmux'], 'select-pane', '-t', str(pane_id) ]
 	return subprocess.call(cmd, stderr=open(os.devnull)) == 0
 
+def layout_option(key, default):
+	# key=value,key=value,key=value
+	pattern = '(?:^|,)' + re.escape(key) + ':(.*?)(?:,|$)'
+	match = re.search(pattern, cfg['layout'])
+	if match is None:
+		return default
+	return match.group(1)
+
+def split_method(vim_pos):
+	if vim_pos == 'left' or vim_pos == 'right':
+		return 'h'
+	else:
+		return 'v'
+
+def compute_layout():
+	vim_pos = layout_option('vim-pos', 'right')
+	split = split_method(vim_pos)
+	pane = tmux_pane_size(split)
+	mode = layout_option('mode', 'shell')
+	swap_panes = (vim_pos == 'left' or vim_pos == 'top')
+	vim_args = ' '
+
+	if mode == 'shell':
+
+		# Handle the horizontal/vertical differences
+		if split == 'h':
+			shell = int(layout_option('size', 132))
+		else:
+			shell = int(layout_option('size', 15))
+
+		# Handle pane swapping
+		if vim_pos == 'left' or vim_pos == 'top':
+			split_size = shell
+		else:
+			split_size = pane - shell - 1
+
+	elif mode == 'vim':
+
+		# Handle the horizontal/vertical differences
+		if split == 'h':
+			vim = int(layout_option('size', 80))
+			shell = int(layout_option('reserve', 132))
+			window_method = 'O'
+		else:
+			vim = int(layout_option('size', 24))
+			shell = int(layout_option('reserve', 15))
+			window_method = 'o'
+
+		# Factor in the vim sub-window count
+		count = layout_option('count', 1)
+		if count == 'auto':
+			count = max(1, (pane - shell) / (vim + 1))
+		else:
+			count = int(count)
+		vim = (vim + 1) * count - 1
+
+		# Handle the pane swapping
+		if vim_pos == 'left' or vim_pos == 'top':
+			split_size = pane - vim - 1
+		else:
+			split_size = vim
+
+		autosplit = bool(layout_option('autosplit', False))
+		if autosplit:
+			vim_args += "-%s%d" % (window_method, count)
+
+	return {
+		'split_method': '-' + split,
+		'split_size':	str(split_size),
+		'swap_panes':	swap_panes,
+		'vim_args':		vim_args,
+	}
+
+
 def spawn_vim_pane(filenames):
+	opt = compute_layout()
 	vim_files = ' '.join(map(pipes.quote, filenames))
-	vim_cmd = 'exec ' + cfg['vim'] + ' ' + vim_files
-	tmux_cmd = [ cfg['tmux'], 'split-window', '-P', '-h', '-l', '80', vim_cmd ]
+	vim_cmd = ' '.join(['exec', cfg['vim'], opt['vim_args'], vim_files])
+	tmux_cmd = [ cfg['tmux'], 'split-window', '-P', opt['split_method'], '-l', opt['split_size'], vim_cmd ]
+	print tmux_cmd
 	pane_path = subprocess.check_output(tmux_cmd).rstrip('\n\r')
 
-    # 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
-    # ^^^^^ pane_path                   pane_id  ^^
+	# 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
+	# ^^^^^ pane_path                   pane_id  ^^
 	pattern = '^' + re.escape(pane_path) + ':.*(%\\d+)'
 	pane_id = cmd_query([ cfg['tmux'], 'lsp', '-a' ], pattern)
+
+	if opt['swap_panes']:
+		tmux_exec(['swap-pane', '-D'])
+
 	return pane_id
 
 def vim_command(command, filename, vim_cwd):
