@@ -28,7 +28,7 @@ def load_config(defaults):
 							 os.path.expanduser('~/.tmux-vim.ini'))
 	try:
 		parser.read(inifile)
-	except ConfigParser.Error as e:
+	except ConfigParser.Error, e:
 		die('Reading %s:\n%s' % (inifile, e))
 	cfg = defaults
 	cfg.update(load_section(parser, 'general'))
