@@ -74,10 +74,13 @@ def get_vim_cwd(vim_pane_id):
 		[ cfg['tmux'], 'lsp', '-F', '#{pane_id}=#{pane_pid}' ],
 		make_pattern(vim_pane_id)
 	)
-	return cmd_query(
-		[ 'lsof', '-p', vim_pid, '-a', '-d', 'cwd', '-Fn' ],
-		'^n(.*)$'
-	)
+	try:
+		return cmd_query(
+			[ 'lsof', '-p', vim_pid, '-a', '-d', 'cwd', '-Fn' ],
+			'^n(.*)$'
+		)
+	except OSError:
+		return None
 
 def tmux_pane_size(split):
 	if split == 'h':
@@ -177,9 +180,15 @@ def spawn_vim_pane(filenames):
 
 def vim_command(command, filename, vim_cwd):
 	# Vim or bash may have changed directory, so we need some path manipulation
-	relpath = os.path.relpath(filename, vim_cwd)
-	abspath = os.path.abspath(filename)
-	path = relpath if len(relpath) < len(abspath) else abspath
+	# First compute the absolute path
+	path = os.path.abspath(filename)
+
+	# Then, if we have a vim working directory, a relative path from that ...
+	if vim_cwd is not None:
+		relpath = os.path.relpath(filename, vim_cwd)
+		# ... and choose the shorter of the two
+		if len(relpath) < len(path):
+			path = relpath
 
 	# We split filename up into chars so it isn't processed as a tmux
 	# key name (eg. space or enter)
