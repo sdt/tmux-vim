@@ -22,6 +22,18 @@ def load_section(parser, section):
 		return { }
 	return dict(parser.items(section))
 
+def load_layout(parser):
+	layout = load_section(parser, 'layout')
+	base_key = 'include'
+	while base_key in layout:
+		base_section = 'layout=' + layout[base_key]
+		if not parser.has_section(base_section):
+			die('Layout section %s not found' % (base_section))
+		base_items = parser.items(base_section)
+		del layout[base_key]
+		layout = dict(base_items + layout.items())
+	return layout
+
 def load_config(defaults):
 	parser = ConfigParser.SafeConfigParser()
 	inifile = os.environ.get('TMUX_VIM_INI',
@@ -32,7 +44,7 @@ def load_config(defaults):
 		die('Reading %s:\n%s' % (inifile, e))
 	cfg = defaults
 	cfg.update(load_section(parser, 'general'))
-	cfg['layout'] = load_section(parser, 'layout')
+	cfg['layout'] = load_layout(parser)
 	return cfg
 
 def tmux_exec(args):
