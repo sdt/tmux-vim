@@ -4,52 +4,72 @@ from datetime import datetime;
 from ConfigParser import SafeConfigParser;
 import os;
 import os.path;
+import re;
 import sys;
 
 def main():
-	load_config_file_to_environment()
+	config = os.environ.get('TMUX_VIM_CONFIG', '~/.tmux-vim.conf')
+	load_config_file_to_environment(config)
 	cp = create_config_from_environment()
 	write_config(cp, sys.stdout)
 
-def load_config_file_to_environment():
+def load_config_file_to_environment(filename):
 	# Rather than try to parse the shell config file, exec the shell itself,
 	# get it to parse the shell config file, and then call this script again.
 	# That way all the stuff in the config file will then be in the environment.
 	#
 	# Use $TMUX_VIM_CONVERTING to flag that we've called ourselves.
-	if 'TMUX_VIM_CONFIG' in os.environ and '_TMUX_VIM_CONVERTING' not in os.environ:
+	if '_TMUX_VIM_CONVERTING' not in os.environ:
 		shell = os.environ['SHELL']
 		shell_cmds = [
-			'set -a',									# export all variables
-			'source ' + os.environ['TMUX_VIM_CONFIG'],	# read the config
-			'_TMUX_VIM_CONVERTING=1',					# set the re-entry flag
-			os.path.abspath(sys.argv[0])				# run this script again
+			'set -a',						# export all variables
+			'source ' + filename, 			# read the config
+			'_TMUX_VIM_CONVERTING=1',		# set the re-entry flag
+			os.path.abspath(sys.argv[0])	# run this script again
 		]
 		# Call exec rather than system because we don't want to return
 		os.execl(shell, shell, '-c', ';'.join(shell_cmds))
+
+def parse_layout_section(cp, section, config):
+	dconf = { }
+	cp.add_section(section)
+	for opt in config.split(','):
+		key, value = opt.split(':')
+		cp.set(section, key, value)
+		dconf[key] = value;
+	return dconf
 
 def create_config_from_environment():
 	cp = SafeConfigParser()
 
 	env = os.environ
-	cp.add_section('general')
+	cmd_section = 'commands'
+	cp.add_section(cmd_section)
 	if 'TMUX_VIM_TMUX_BIN' in env:
-		cp.set('general', 'tmux', env['TMUX_VIM_TMUX_BIN'])
+		cp.set(cmd_section, 'tmux', env['TMUX_VIM_TMUX_BIN'])
 	else:
-		cp.set('general', '# tmux', '(tmux commandline)')
+		cp.set(cmd_section, '# tmux', '(tmux commandline)')
 	if 'TMUX_VIM_VIM_BIN' in env or 'TMUX_VIM_VIM_ARGS' in env:
 		vim = env.get('TMUX_VIM_VIM_BIN', 'vim')
 		if 'TMUX_VIM_VIM_ARGS' in env:
 			vim += ' ' + env['TMUX_VIM_VIM_ARGS']
-		cp.set('general', 'vim', vim)
+		cp.set(cmd_section, 'vim', vim)
 	else:
-		cp.set('general', '# vim', '(vim commandline)')
+		cp.set(cmd_section, '# vim', '(vim commandline)')
 
-	if 'TMUX_VIM_LAYOUT' in env:
-		cp.add_section('layout')
-		for opt in env['TMUX_VIM_LAYOUT'].split(','):
-			key, value = opt.split(':')
-			cp.set('layout', key, value)
+	layout = parse_layout_section(cp, 'layout', env.get('TMUX_VIM_LAYOUT', ''))
+
+	# See if we can find any sub-layouts like in the sample config
+	for var in env:
+		match = re.match('TMUX_VIM_LAYOUT_(.*)', var)
+		if match:
+			name = match.group(1).lower()
+			sub_layout = parse_layout_section(cp, 'layout=' + name, env[var])
+			# See if our sub-layout matches any others
+			if sub_layout == layout:
+				cp.remove_section('layout')
+				cp.add_section('layout')
+				cp.set('layout', 'include', name)
 
 	return cp
 
