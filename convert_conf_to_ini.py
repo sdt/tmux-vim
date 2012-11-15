@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 
 from datetime import datetime;
-from ConfigParser import SafeConfigParser;
+import ConfigParser;
 import os;
 import os.path;
 import re;
 import sys;
 
+LAYOUT_PREFIX = 'layout='
+
 def main():
 	config = os.environ.get('TMUX_VIM_CONFIG', '~/.tmux-vim.conf')
 	load_config_file_to_environment(config)
 	cp = create_config_from_environment()
+	optimise_config(cp)
 	write_config(cp, sys.stdout)
 
 def load_config_file_to_environment(filename):
@@ -31,24 +34,23 @@ def load_config_file_to_environment(filename):
 		os.execl(shell, shell, '-c', ';'.join(shell_cmds))
 
 def parse_layout_section(cp, section, config):
-	dconf = { }
 	cp.add_section(section)
 	for opt in config.split(','):
 		key, value = opt.split(':')
 		cp.set(section, key, value)
-		dconf[key] = value;
-	return dconf
 
 def create_config_from_environment():
-	cp = SafeConfigParser()
+	cp = ConfigParser.SafeConfigParser()
 
-	env = os.environ
 	cmd_section = 'commands'
 	cp.add_section(cmd_section)
+
+	env = os.environ
 	if 'TMUX_VIM_TMUX_BIN' in env:
 		cp.set(cmd_section, 'tmux', env['TMUX_VIM_TMUX_BIN'])
 	else:
 		cp.set(cmd_section, '# tmux', '(tmux commandline)')
+
 	if 'TMUX_VIM_VIM_BIN' in env or 'TMUX_VIM_VIM_ARGS' in env:
 		vim = env.get('TMUX_VIM_VIM_BIN', 'vim')
 		if 'TMUX_VIM_VIM_ARGS' in env:
@@ -57,21 +59,48 @@ def create_config_from_environment():
 	else:
 		cp.set(cmd_section, '# vim', '(vim commandline)')
 
-	layout = parse_layout_section(cp, 'layout', env.get('TMUX_VIM_LAYOUT', ''))
-
 	# See if we can find any sub-layouts like in the sample config
 	for var in env:
 		match = re.match('TMUX_VIM_LAYOUT_(.*)', var)
 		if match:
 			name = match.group(1).lower()
-			sub_layout = parse_layout_section(cp, 'layout=' + name, env[var])
-			# See if our sub-layout matches any others
-			if sub_layout == layout:
-				cp.remove_section('layout')
-				cp.add_section('layout')
-				cp.set('layout', 'include', name)
+			parse_layout_section(cp, LAYOUT_PREFIX + name, env[var])
+
+	parse_layout_section(cp, 'layout', env.get('TMUX_VIM_LAYOUT', ''))
 
 	return cp
+
+def section_is_superset(cp, supsec, subsec):
+	try:
+		for key, val in cp.items(subsec):
+			if cp.get(supsec, key) != val:
+				return False
+		return True
+	except ConfigParser.NoOptionError:
+		return False
+
+def convert_subsection(cp, supsec, subsec):
+	for key, val in cp.items(subsec):
+		cp.remove_option(supsec, key)
+	cp.set(supsec, 'include', subsec[len(LAYOUT_PREFIX):])
+
+def optimise_config(cp):
+	# Go through the layout sections in order, from biggest to smallest, with
+	# the top-level section first.
+	# This order ensures two things:
+	# 1. we always include the biggest sub-section if multiple ones match
+	# 2. we don't try to extract a nested sub-section
+	sections = [ s for s in cp.sections() if re.match(LAYOUT_PREFIX, s) ]
+	sections.sort(key = len, reverse=True)
+	sections.insert(0, 'layout')
+
+	for i in range(0, len(sections)-1):
+		supsec = sections[i]
+		for j in range(i + 1, len(sections)):
+			subsec = sections[j]
+			if section_is_superset(cp, supsec, subsec):
+				convert_subsection(cp, supsec, subsec)
+				break
 
 def write_config(cp, fh):
 	print >> fh,  '# tmux-vim config'
