@@ -5,6 +5,7 @@ import ConfigParser;
 import os;
 import os.path;
 import re;
+import string;
 import sys;
 
 LAYOUT_PREFIX = 'layout='
@@ -60,10 +61,11 @@ def create_config_from_environment():
 		cp.set(cmd_section, '# vim', '(vim commandline)')
 
 	# See if we can find any sub-layouts like in the sample config
+	tr = string.maketrans('_', '-')
 	for var in env:
 		match = re.match('TMUX_VIM_LAYOUT_(.*)', var)
 		if match:
-			name = match.group(1).lower()
+			name = match.group(1).lower().translate(tr)
 			parse_layout_section(cp, LAYOUT_PREFIX + name, env[var])
 
 	parse_layout_section(cp, 'layout', env.get('TMUX_VIM_LAYOUT', ''))
