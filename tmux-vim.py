@@ -49,8 +49,8 @@ def load_config(defaults):
 	cfg['tmux'] = shlex.split(cfg['tmux']) # we exec this directly, not via sh
 	return cfg
 
-def tmux_exec(args):
-	subprocess.check_call(cfg['tmux'] + args)
+def tmux_exec(*args):
+	subprocess.check_call(cfg['tmux'] + list(args))
 
 def check_output(command):
 	process = subprocess.Popen(command, stdout=subprocess.PIPE)
@@ -84,7 +84,7 @@ def tmux_fetch_env(key):
 	return tmux_query(['show-environment'], make_pattern(key))
 
 def tmux_store_env(key, value):
-	tmux_exec([ 'set-environment', key, value ])
+	tmux_exec('set-environment', key, value)
 
 def tmux_window_id():
 	return pane_query('window_index', os.environ['TMUX_PANE']);
@@ -189,7 +189,7 @@ def spawn_vim_pane(filenames):
 	pane_id = tmux_query(['lsp', '-a'], pattern)
 
 	if opt['swap_panes']:
-		tmux_exec(['swap-pane', '-D'])
+		tmux_exec('swap-pane', '-D')
 
 	return pane_id
 
@@ -212,11 +212,11 @@ def vim_command(command, filename, vim_cwd):
 def reuse_vim_pane(pane_id, filenames):
 	if filenames:
 		vim_cwd = get_vim_cwd(pane_id)
-		keys = ['escape']
+		cmd = ['send-keys', '-t', pane_id, 'escape']
 		for filename in filenames[:-1]:
-			keys += vim_command('badd', filename, vim_cwd)
-		keys += vim_command('edit', filenames[-1], vim_cwd)
-		tmux_exec([ 'send-keys', '-t', pane_id ] + keys)
+			cmd += vim_command('badd', filename, vim_cwd)
+		cmd += vim_command('edit', filenames[-1], vim_cwd)
+		tmux_exec(*cmd)
 
 def pre_flight_checks():
 	# Check that tmux is running
