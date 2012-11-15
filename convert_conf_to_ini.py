@@ -11,8 +11,11 @@ import sys;
 LAYOUT_PREFIX = 'layout='
 
 def main():
-	config = os.environ.get('TMUX_VIM_CONFIG', '~/.tmux-vim.conf')
-	load_config_file_to_environment(config)
+	if len(sys.argv) > 1:
+		filename = sys.argv[1]
+	else:
+		filename = os.environ.get('TMUX_VIM_CONFIG', '~/.tmux-vim.conf')
+	load_config_file_to_environment(filename)
 	cp = create_config_from_environment()
 	optimise_config(cp)
 	write_config(cp, sys.stdout)
@@ -30,6 +33,7 @@ def load_config_file_to_environment(filename):
 			'source ' + filename, 			# read the config
 			'_TMUX_VIM_CONVERTING=1',		# set the re-entry flag
 			os.path.abspath(sys.argv[0])	# run this script again
+				+ ' ' + filename			# ... with this filename
 		]
 		# Call exec rather than system because we don't want to return
 		os.execl(shell, shell, '-c', ';'.join(shell_cmds))
