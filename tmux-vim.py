@@ -74,6 +74,12 @@ def tmux_query(command, pattern):
 def make_pattern(lhs):
 	return '^' + re.escape(lhs) + '=(.*)\s*$'
 
+def pane_query(rhs_format, lhs_match):
+	return tmux_query(
+		['lsp', '-F', '#{pane_id}=#{%s}' % (rhs_format)],
+		make_pattern(lhs_match)
+	)
+
 def tmux_fetch_env(key):
 	return tmux_query(['show-environment'], make_pattern(key))
 
@@ -81,16 +87,10 @@ def tmux_store_env(key, value):
 	tmux_exec([ 'set-environment', key, value ])
 
 def tmux_window_id():
-	return tmux_query(
-		['lsp', '-a', '-F', '#{pane_id}=#{window_index}'],
-		make_pattern(os.environ['TMUX_PANE'])
-	)
+	return pane_query('window_index', os.environ['TMUX_PANE']);
 
 def get_vim_cwd(vim_pane_id):
-	vim_pid = tmux_query(
-		['lsp', '-F', '#{pane_id}=#{pane_pid}'],
-		make_pattern(vim_pane_id)
-	)
+	vim_pid = pane_query('pane_pid', vim_pane_id)
 	try:
 		return cmd_query(
 			[ 'lsof', '-p', vim_pid, '-a', '-d', 'cwd', '-Fn' ],
@@ -104,13 +104,10 @@ def tmux_pane_size(split):
 		dimension = 'width'
 	else:
 		dimension = 'height'
-	return int(tmux_query(
-		['lsp', '-F', '#{pane_id}=#{pane_%s}' % (dimension)],
-		make_pattern(os.environ['TMUX_PANE'])
-	))
+	return int(pane_query('pane_' + dimension, os.environ['TMUX_PANE']))
 
 def select_pane(pane_id):
-	if tmux_query(['lsp', '-F', '#{pane_id}=1'], make_pattern(pane_id)) == None:
+	if pane_query('pane_id', pane_id) == None:
 		return False
 	cmd = cfg['tmux'] + ['select-pane', '-t', str(pane_id)]
 	return subprocess.call(cmd) == 0
