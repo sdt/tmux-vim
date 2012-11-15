@@ -4,6 +4,7 @@ import ConfigParser;
 import os;
 import pipes;
 import re;
+import shlex;
 import subprocess;
 import sys;
 
@@ -43,12 +44,13 @@ def load_config(defaults):
 	except ConfigParser.Error, e:
 		die('Reading %s:\n%s' % (inifile, e))
 	cfg = defaults
-	cfg.update(load_section(parser, 'general'))
+	cfg.update(load_section(parser, 'commands'))
 	cfg['layout'] = load_layout(parser)
+	cfg['tmux'] = shlex.split(cfg['tmux']) # we exec this directly, not via sh
 	return cfg
 
 def tmux_exec(args):
-	subprocess.check_call([cfg['tmux']] + args)
+	subprocess.check_call(cfg['tmux'] + args)
 
 def check_output(command):
 	process = subprocess.Popen(command, stdout=subprocess.PIPE)
@@ -66,24 +68,27 @@ def cmd_query(command, pattern):
 		return None
 	return match.group(1)
 
+def tmux_query(command, pattern):
+	return cmd_query(cfg['tmux'] + command, pattern)
+
 def make_pattern(lhs):
 	return '^' + re.escape(lhs) + '=(.*)\s*$'
 
 def tmux_fetch_env(key):
-	return cmd_query([ cfg['tmux'], 'show-environment' ], make_pattern(key))
+	return tmux_query(['show-environment'], make_pattern(key))
 
 def tmux_store_env(key, value):
 	tmux_exec([ 'set-environment', key, value ])
 
 def tmux_window_id():
-	return cmd_query(
-		[ cfg['tmux'], 'lsp', '-a', '-F', '#{pane_id}=#{window_index}' ],
+	return tmux_query(
+		['lsp', '-a', '-F', '#{pane_id}=#{window_index}'],
 		make_pattern(os.environ['TMUX_PANE'])
 	)
 
 def get_vim_cwd(vim_pane_id):
-	vim_pid = cmd_query(
-		[ cfg['tmux'], 'lsp', '-F', '#{pane_id}=#{pane_pid}' ],
+	vim_pid = tmux_query(
+		['lsp', '-F', '#{pane_id}=#{pane_pid}'],
 		make_pattern(vim_pane_id)
 	)
 	try:
@@ -99,16 +104,15 @@ def tmux_pane_size(split):
 		dimension = 'width'
 	else:
 		dimension = 'height'
-	return int(cmd_query(
-		[ cfg['tmux'], 'lsp', '-F', '#{pane_id}=#{pane_%s}' % (dimension) ],
+	return int(tmux_query(
+		['lsp', '-F', '#{pane_id}=#{pane_%s}' % (dimension)],
 		make_pattern(os.environ['TMUX_PANE'])
 	))
 
 def select_pane(pane_id):
-	if cmd_query([ cfg['tmux'], 'lsp', '-F', '#{pane_id}=1' ],
-				  make_pattern(pane_id)) == None:
+	if tmux_query(['lsp', '-F', '#{pane_id}=1'], make_pattern(pane_id)) == None:
 		return False
-	cmd = [ cfg['tmux'], 'select-pane', '-t', str(pane_id) ]
+	cmd = cfg['tmux'] + ['select-pane', '-t', str(pane_id)]
 	return subprocess.call(cmd) == 0
 
 def layout_option(key, default):
@@ -177,13 +181,15 @@ def spawn_vim_pane(filenames):
 	opt = compute_layout()
 	vim_files = ' '.join(map(pipes.quote, filenames))
 	vim_cmd = ' '.join(['exec', cfg['vim'], opt['vim_args'], vim_files])
-	tmux_cmd = [ cfg['tmux'], 'split-window', '-P', opt['split_method'], '-l', opt['split_size'], vim_cmd ]
+	tmux_cmd = cfg['tmux'] + ['split-window', '-P', opt['split_method'],
+	                                          '-l', opt['split_size'],
+											  vim_cmd]
 	pane_path = check_output(tmux_cmd).rstrip('\n\r')
 
 	# 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
 	# ^^^^^ pane_path                   pane_id  ^^
 	pattern = '^' + re.escape(pane_path) + ':.*(%\\d+)'
-	pane_id = cmd_query([ cfg['tmux'], 'lsp', '-a' ], pattern)
+	pane_id = tmux_query(['lsp', '-a'], pattern)
 
 	if opt['swap_panes']:
 		tmux_exec(['swap-pane', '-D'])
@@ -221,11 +227,11 @@ def pre_flight_checks():
 		die('tmux session not detected')
 
     # Check that tmux supports the -V command (>= v1.5)
-	if subprocess.call([ cfg['tmux'], '-V' ], stdout=open(os.devnull), stderr=open(os.devnull)) != 0:
+	if subprocess.call(cfg['tmux'] + ['-V'], stdout=open(os.devnull), stderr=open(os.devnull)) != 0:
 		die('tmux 1.6 or greater is required')
 
     # Check tmux is v1.6 or greater
-	if float(cmd_query([ cfg['tmux'], '-V' ], 'tmux\s+(\S+)')) < 1.6:
+	if float(tmux_query(['-V'], 'tmux\s+(\S+)')) < 1.6:
 		die('tmux 1.6 or greater is required')
 
 #------------------------------------------------------------------------------
