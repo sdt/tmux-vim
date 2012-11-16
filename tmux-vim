@@ -180,7 +180,7 @@ def spawn_vim_pane(filenames):
 	vim_cmd = ' '.join(['exec', cfg['vim'], opt['vim_args'], vim_files])
 	tmux_cmd = cfg['tmux'] + ['split-window', '-P', opt['split_method'],
 	                                          '-l', opt['split_size'],
-											  vim_cmd]
+	                                          vim_cmd]
 	pane_path = check_output(tmux_cmd).rstrip('\n\r')
 
 	# 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
@@ -223,11 +223,11 @@ def pre_flight_checks():
 	if not 'TMUX' in os.environ:
 		die('tmux session not detected')
 
-    # Check that tmux supports the -V command (>= v1.5)
+	# Check that tmux supports the -V command (>= v1.5)
 	if subprocess.call(cfg['tmux'] + ['-V'], stdout=open(os.devnull), stderr=open(os.devnull)) != 0:
 		die('tmux 1.6 or greater is required')
 
-    # Check tmux is v1.6 or greater
+	# Check tmux is v1.6 or greater
 	if float(tmux_query(['-V'], 'tmux\s+(\S+)')) < 1.6:
 		die('tmux 1.6 or greater is required')
 
