@@ -1,8 +1,8 @@
 tmux-vim
 ========
 
-**tmux-vim** is a bash script which works in conjunction with **tmux** to create
-a persistent **vim** pane within a **tmux** window.
+**tmux-vim** is a python script which works in conjunction with **tmux** to
+create a persistent **vim** session in a **tmux** pane.
 
 ![screenshot](http://sdt.github.com/tmux-vim/img/tvim-screenshot.png)
 
@@ -15,7 +15,8 @@ Use **tmux-vim** just like you'd use **vim**.
 
 
 The first time you run it, a new pane will be created within your current
-**tmux** window according to `TMUX_VIM_LAYOUT`, running an instance of **vim**.
+**tmux** window according to your specified layout`, running an instance of
+**vim**.
 
 Further calls to **tmux-vim** will open the files in new buffers in the same
 **vim** session. This works in all panes within that **tmux** window, even ones
@@ -23,6 +24,8 @@ created after the **vim** session has been started.
 
 If you close that **vim** session, the pane will be destroyed. The next call to
 **tmux-vim** will create a new one.
+
+Each **tmux** window can have its own independent **tmux-vim** session.
 
 Installation
 ------------
@@ -38,61 +41,44 @@ Alternatively, you can do something like this in your `.bashrc`:
 Requirements
 ------------
 
-You need **tmux** version 1.6 or later.
+You need **tmux** version 1.6 or later, **vim**, and optionally **lsof**.
 
-Configuration
--------------
+Configuration file
+------------------
 
-This behaviour can be adjusted with the following environment variables.
+**tmux-vim** reads its configuration from `$HOME/.tmux-vim.ini`. The location
+can be overridden with the `$TMUX_VIM_INI` environment variable.
 
-### TMUX_VIM_CONFIG
+See `sample.tmux-vim.ini` for a sample configuration file.
 
-Path to configuration file.
+### [commands] section
 
-Default: ~/.tmux-vim.conf
+**tmux-vim** uses various external commands. The `[commands]` section allows
+the default commands to be overridden with custom paths or extra parameters.
 
-The remaining variables can be set via this config file.
-
-### TMUX_VIM_TMUX_BIN
-
-The binary executable (and arguments) used to run **tmux**.
+#### tmux
 
 Default: tmux
 
 To test tmux-vim against a different tmux binary that your usual one, first
 start the tmux session with `$path_to_/tmux -L testing`, and then set
-`TMUX_VIM_TMUX_BIN=$path_to_/tmux -L testing`.
+`tmux = $path_to_/tmux -L testing`.
 
-### TMUX_VIM_VIM_BIN
-
-The binary executable used to run **vim**.
+#### vim
 
 Default: vim
 
 Useful if you're using [MacVim](http://code.google.com/p/macvim/) and have
 another binary like `mvim` which you'd like to use.
 
-### TMUX_VIM_VIM_ARGS
-
-Command-line arguments to pass through to **vim**.
-
-Default: (empty)
-
-Note that these will only be used when the **vim** instance is created.
-
-### TMUX_VIM_LAYOUT
-
-Layout specification. See *Layout* below.
-
-Default: mode:shell,vim-pos:right,width:132
-
-Layout
-------
-
-The window layout can be configured with the `TMUX_VIM_LAYOUT` variable.
+### [layout] section
 
 When the **vim** window is spawned, the current **tmux** pane is split into two.
 **tmux-vim** needs to decide which way to split it, and where to put the split.
+
+The layout section allows this to be customised.
+
+Default: mode:shell,vim-pos:right,width:132
 
 ### Primary layout options
 
@@ -105,7 +91,7 @@ Default: `right`
 
 #### mode
 
-How the pane sizes is computed.
+How the pane sizes are computed.
 
 Values: `vim` `shell`
 Default: `shell`
@@ -131,6 +117,8 @@ The defaults depend upon the mode. In `vim` mode, 80x24, in `shell` 132x15.
 
 #### count
 
+How many vim sub-windows to create.
+
 Values: _number_ or `auto`
 Default: 1
 
@@ -141,12 +129,13 @@ sub-windows, leaving at least `reserve` columns for the shell.
 
 #### reserve
 
-Only valid for `count:auto`.
+Only valid for `count = auto`.
 
 Value: _number_
+Default: 132x15
 
 The amount of space to reserve for the shell when using `mode:vim` with
-`count:auto`
+`count:auto`.
 
 #### autosplit
 
