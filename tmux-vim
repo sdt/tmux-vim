@@ -205,6 +205,8 @@ def vim_command(command, filename, vim_cwd):
 		if len(relpath) < len(path):
 			path = relpath
 
+	path = path.replace(' ', '\ ')
+
 	# We split filename up into chars so it isn't processed as a tmux
 	# key name (eg. space or enter)
 	return [ ':', command, 'space' ] + list(path) + [ 'enter' ]
