@@ -80,11 +80,11 @@ def pane_query(rhs_format, lhs_match):
 		make_pattern(lhs_match)
 	)
 
-def tmux_fetch_env(key):
-	return tmux_query(['show-environment'], make_pattern(key))
+def pane_id_key():
+	return 'tmux_vim_pane_' + tmux_window_id()
 
-def tmux_store_env(key, value):
-	tmux_exec('set-environment', key, value)
+def fetch_pane_id():
+	return tmux_query(['show-environment'], make_pattern(pane_id_key()))
 
 def tmux_window_id():
 	return pane_query('window_index', os.environ['TMUX_PANE']);
@@ -178,20 +178,19 @@ def spawn_vim_pane(filenames):
 	opt = compute_layout()
 	vim_files = ' '.join(map(pipes.quote, filenames))
 	vim_cmd = ' '.join(['exec', cfg['vim'], opt['vim_args'], vim_files])
-	tmux_cmd = cfg['tmux'] + ['split-window', '-P', opt['split_method'],
-	                                          '-l', opt['split_size'],
-	                                          vim_cmd]
-	pane_path = check_output(tmux_cmd).rstrip('\n\r')
 
-	# 0:1.1: [100x88] [history 0/10000, 0 bytes] %2
-	# ^^^^^ pane_path                   pane_id  ^^
-	pattern = '^' + re.escape(pane_path) + ':.*(%\\d+)'
-	pane_id = tmux_query(['lsp', '-a'], pattern)
+	# The new pane has the pane_id in $TMUX_PANE. We can directly stick
+	# that into the tmux environment.
+	env_cmd = ' '.join(cfg['tmux'] +
+					   ['set-environment', pane_id_key(), '$TMUX_PANE'])
+
+	tmux_cmd = cfg['tmux'] + ['split-window', opt['split_method'],
+	                                          '-l', opt['split_size'],
+											  env_cmd + ';' + vim_cmd]
+	subprocess.check_call(tmux_cmd)
 
 	if opt['swap_panes']:
 		tmux_exec('swap-pane', '-D')
-
-	return pane_id
 
 def vim_command(command, filename, vim_cwd):
 	# Vim or bash may have changed directory, so we need some path manipulation
@@ -239,11 +238,9 @@ def main(filenames):
 	global cfg
 	cfg = load_config({ 'tmux': 'tmux', 'vim': 'vim' })
 	pre_flight_checks()
-	window_key = 'tmux_vim_pane_' + tmux_window_id()
-	vim_pane_id = tmux_fetch_env(window_key)
+	vim_pane_id = fetch_pane_id()
 	if vim_pane_id is None or not select_pane(vim_pane_id):
-		vim_pane_id = spawn_vim_pane(filenames)
-		tmux_store_env(window_key, vim_pane_id)
+		spawn_vim_pane(filenames)
 	else:
 		reuse_vim_pane(vim_pane_id, filenames)
 
