@@ -7,6 +7,7 @@ import re;
 import shlex;
 import subprocess;
 import sys;
+from distutils.version import LooseVersion
 
 #------------------------------------------------------------------------------
 
@@ -229,7 +230,7 @@ def pre_flight_checks():
 		die('tmux 1.6 or greater is required')
 
 	# Check tmux is v1.6 or greater
-	if float(tmux_query(['-V'], 'tmux\s+([0-9\.]+)')) < 1.6:
+	if LooseVersion(tmux_query(['-V'], 'tmux\s+(\S+)')) < LooseVersion("1.6"):
 		die('tmux 1.6 or greater is required')
 
 #------------------------------------------------------------------------------
