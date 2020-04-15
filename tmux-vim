@@ -1,6 +1,6 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-import ConfigParser;
+import configparser;
 import os;
 import pipes;
 import re;
@@ -16,7 +16,7 @@ cfg = {}
 #------------------------------------------------------------------------------
 
 def die(msg):
-	print >> sys.stderr, msg
+	print(msg, file=sys.stderr)
 	sys.exit(1)
 
 def load_section(parser, section):
@@ -37,12 +37,11 @@ def load_layout(parser):
 	return layout
 
 def load_config(defaults):
-	parser = ConfigParser.SafeConfigParser()
-	inifile = os.environ.get('TMUX_VIM_INI',
-							 os.path.expanduser('~/.tmux-vim.ini'))
+	parser = configparser.ConfigParser()
+	inifile = os.environ.get('TMUX_VIM_INI', os.path.expanduser('~/.tmux-vim.ini'))
 	try:
 		parser.read(inifile)
-	except ConfigParser.Error, e:
+	except configparser.Error as e:
 		die('Reading %s:\n%s' % (inifile, e))
 	cfg = defaults
 	cfg.update(load_section(parser, 'commands'))
@@ -59,7 +58,7 @@ def check_output(command):
 	retcode = process.poll()
 	if retcode:
 		raise subprocess.CalledProcessError(retcode, command, output=output)
-	return output
+	return output.decode('utf-8')
 
 def cmd_query(command, pattern):
 	output = check_output(command)
@@ -124,7 +123,7 @@ def split_method(vim_pos):
 
 def eval_percent(pc, val):
 	if str(pc)[-1] == '%':
-		return int(pc[:-1]) * val / 100
+		return int(pc[:-1]) * val // 100
 	else:
 		return int(pc)
 
@@ -153,7 +152,7 @@ def compute_layout():
 		if count == 'auto':
 			reserve = layout_option('reserve', default_shell[split])
 			shell = eval_percent(reserve, pane)
-			count = max(1, (pane - shell) / (vim + 1))
+			count = max(1, (pane - shell) // (vim + 1))
 		else:
 			count = int(count)
 
