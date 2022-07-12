@@ -7,7 +7,7 @@ import re;
 import shlex;
 import subprocess;
 import sys;
-from distutils.version import LooseVersion
+#from packaging import version
 
 #------------------------------------------------------------------------------
 
@@ -224,13 +224,13 @@ def pre_flight_checks():
 	if not 'TMUX' in os.environ:
 		die('tmux session not detected')
 
-	# Check that tmux supports the -V command (>= v1.5)
-	if subprocess.call(cfg['tmux'] + ['-V'], stdout=open(os.devnull), stderr=open(os.devnull)) != 0:
-		die('tmux 1.6 or greater is required')
+#	# Check that tmux supports the -V command (>= v1.5)
+#	if subprocess.call(cfg['tmux'] + ['-V'], stdout=open(os.devnull), stderr=open(os.devnull)) != 0:
+#		die('tmux 1.6 or greater is required')
 
-	# Check tmux is v1.6 or greater
-	if LooseVersion(tmux_query(['-V'], 'tmux\s+(\S+)')) < LooseVersion("1.6"):
-		die('tmux 1.6 or greater is required')
+#	# Check tmux is v1.6 or greater
+#	if version.parse(tmux_query(['-V'], 'tmux\s+(\S+)')) < version.parse("1.6"):
+#		die('tmux 1.6 or greater is required')
 
 #------------------------------------------------------------------------------
 
