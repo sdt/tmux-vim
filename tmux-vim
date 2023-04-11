@@ -2,7 +2,6 @@
 
 import configparser;
 import os;
-import pipes;
 import re;
 import shlex;
 import subprocess;
@@ -176,7 +175,7 @@ def compute_layout():
 
 def spawn_vim_pane(filenames):
 	opt = compute_layout()
-	vim_files = ' '.join(map(pipes.quote, filenames))
+	vim_files = ' '.join(map(shlex.quote, filenames))
 	vim_cmd = ' '.join(['exec', cfg['vim'], opt['vim_args'], vim_files])
 
 	# The new pane has the pane_id in $TMUX_PANE. We can directly stick
