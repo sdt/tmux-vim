@@ -71,7 +71,7 @@ def tmux_query(command, pattern):
 	return cmd_query(cfg['tmux'] + command, pattern)
 
 def make_pattern(lhs):
-	return '^' + re.escape(lhs) + '=(.*)\s*$'
+	return '^' + re.escape(lhs) + '=(.*)\\s*$'
 
 def pane_query(rhs_format, lhs_match):
 	return tmux_query(
@@ -203,7 +203,7 @@ def vim_command(command, filename, vim_cwd):
 		if len(relpath) < len(path):
 			path = relpath
 
-	path = path.replace(' ', '\ ')
+	path = path.replace(' ', '\\ ')
 
 	# We split filename up into chars so it isn't processed as a tmux
 	# key name (eg. space or enter)
